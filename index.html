@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PokeMaster: Shiny Persistence v31</title>
+    <title>PokeMaster: Icon Swap v31.1</title>
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/luxury-ball.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         :root { --primary: #2d5a27; --gold: #d4af37; --bg: #e0eed0; --mega: #ff00ff; --hp-green: #4caf50; --task-blue: #3498db; }
         body { font-family: 'Courier New', sans-serif; background: #222; padding: 10px; margin: 0; display: flex; flex-direction: column; align-items: center; color: #333; overflow-x: hidden; }
@@ -52,7 +56,7 @@
         <div class="buddy-container"><img id="buddyImg" src=""></div>
         <div class="enemy-container">
             <div id="hpWrapper" class="hidden"><div class="hp-container"><div id="hpFill" class="hp-bar"></div></div></div>
-            <img id="pokeImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/luxury-ball.png">
+            <img id="pokeImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png">
         </div>
         <img id="ballOverlay" src="">
     </div>
@@ -152,8 +156,8 @@ const POKE_NAMES = { 1: "妙蛙種子", 3: "妙蛙花", 4: "小火龍", 6: "噴�
 let state = {
     balance: 0, level: 1, pool: 0,
     items: { poke: 10, great: 0, ultra: 0, master: 0, shards: 0, stones: 0 },
-    owned: [{id: 25, shiny: false}], // 改為物件陣列
-    buddy: {id: 25, shiny: false}, // 夥伴也改為物件
+    owned: [{id: 25, shiny: false}],
+    buddy: {id: 25, shiny: false},
     megaTime: 0, totalRecords: 0, totalCaught: 0,
     dailyCount: 0, dailyResetDate: "", consecutiveDays: 0, lastRecordDate: "",
     history: []
@@ -176,7 +180,6 @@ function updateUI() {
     const bImg = document.getElementById('buddyImg');
     bImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${sId}.png`;
     
-    // 閃光持久化視覺
     if (state.buddy.shiny) bImg.classList.add('shiny-effect');
     else bImg.classList.remove('shiny-effect');
 
@@ -190,12 +193,9 @@ function updateUI() {
     localStorage.setItem('pokeClassic_v31', JSON.stringify(state));
 }
 
-// --- [ 夥伴選單核心調整 ] ---
 function openBuddyMenu() {
     const list = document.getElementById('buddyListMenu');
-    // 取得所有不重複的 ID
     const uniqueIds = [...new Set(state.owned.map(p => p.id))].sort((a, b) => a - b);
-    
     list.innerHTML = uniqueIds.map(id => {
         const name = POKE_NAMES[id] || `寶可夢`;
         const no = String(id).padStart(3, '0');
@@ -209,35 +209,21 @@ function openBuddyMenu() {
 function previewBuddy(id, forceShiny = null) {
     const hasNormal = state.owned.some(p => p.id === id && !p.shiny);
     const hasShiny = state.owned.some(p => p.id === id && p.shiny);
-    
-    // 如果沒指定，預設選中現有的型態
     tempPreview.id = id;
     if (forceShiny !== null) tempPreview.shiny = forceShiny;
     else tempPreview.shiny = hasShiny && (!hasNormal || state.buddy.id === id ? state.buddy.shiny : false);
-
     const pImg = document.getElementById('previewImg');
     pImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-    if (tempPreview.shiny) pImg.classList.add('shiny-effect');
-    else pImg.classList.remove('shiny-effect');
-    
+    if (tempPreview.shiny) pImg.classList.add('shiny-effect'); else pImg.classList.remove('shiny-effect');
     document.getElementById('previewName').innerText = (POKE_NAMES[id] || `寶可夢 #${id}`) + (tempPreview.shiny ? " (✨)" : "");
-    
-    // 二次點選按鈕（形態切換）
     let switchHtml = "";
     if (hasNormal && hasShiny) {
-        switchHtml = `<div class="shiny-toggle">
-            <button onclick="previewBuddy(${id}, false)" style="padding:2px 5px; font-size:10px;">普通</button>
-            <button onclick="previewBuddy(${id}, true)" style="padding:2px 5px; font-size:10px; background:gold;">閃光✨</button>
-        </div>`;
+        switchHtml = `<div class="shiny-toggle"><button onclick="previewBuddy(${id}, false)" style="padding:2px 5px; font-size:10px;">普通</button><button onclick="previewBuddy(${id}, true)" style="padding:2px 5px; font-size:10px; background:gold;">閃光✨</button></div>`;
     }
     document.getElementById('formSwitchArea').innerHTML = switchHtml;
 }
 
-document.getElementById('setBuddyBtn').onclick = () => {
-    state.buddy = { ...tempPreview };
-    updateUI();
-    closeModals();
-};
+document.getElementById('setBuddyBtn').onclick = () => { state.buddy = { ...tempPreview }; updateUI(); closeModals(); };
 
 async function throwBall() {
     const t = document.getElementById('ballSelect').value;
@@ -252,7 +238,6 @@ async function throwBall() {
         const isShiny = state.current.isShiny;
         document.getElementById('msgText').innerText = `成功捕捉了 ${isShiny?'✨':''}${POKE_NAMES[state.current.id] || ''}！`;
         state.totalCaught++;
-        // 儲存持久化物件
         state.owned.push({ id: state.current.id, shiny: isShiny });
         if (MEGA_DATA[state.current.id]) { state.items.shards++; if(state.items.shards>=5){state.items.shards=0; state.items.stones++;} }
         setTimeout(resetBattle, 1200);
@@ -263,7 +248,6 @@ async function throwBall() {
     updateUI();
 }
 
-// --- [ 其餘 v30 功能完全保留 ] ---
 function record() {
     const amt = parseInt(document.getElementById('amt').value); if (!amt) return;
     const today = new Date().toISOString().split('T')[0];
@@ -291,6 +275,15 @@ function spawn() {
     document.getElementById('battleActions').classList.remove('hidden');
     document.getElementById('hpWrapper').classList.remove('hidden');
     document.getElementById('msgText').innerText = `發現了野生的 ${state.current.isShiny?'✨':''}${name}！`;
+    updateUI();
+}
+
+function resetBattle() {
+    state.current = null; document.getElementById('inputArea').classList.remove('hidden'); document.getElementById('battleActions').classList.add('hidden');
+    document.getElementById('hpWrapper').classList.add('hidden'); document.getElementById('ballOverlay').style.display = 'none';
+    document.getElementById('pokeImg').style.opacity = '1'; 
+    // 重置後改為高級球
+    document.getElementById('pokeImg').src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png";
     updateUI();
 }
 
@@ -327,12 +320,6 @@ function renderShop() {
     const s = [{id:'poke', n:'精靈球', p:100, img:'poke-ball'}, {id:'great', n:'超級球', p:300, img:'great-ball'}, {id:'ultra', n:'高級球', p:600, img:'ultra-ball'}];
     document.getElementById('shopItems').innerHTML = s.map(i => `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;"><span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${i.img}.png" class="icon-sm">${i.n}</span><button onclick="buy('${i.id}', ${i.p})">P$ ${i.p}</button></div>`).join('');
 }
-function resetBattle() {
-    state.current = null; document.getElementById('inputArea').classList.remove('hidden'); document.getElementById('battleActions').classList.add('hidden');
-    document.getElementById('hpWrapper').classList.add('hidden'); document.getElementById('ballOverlay').style.display = 'none';
-    document.getElementById('pokeImg').style.opacity = '1'; document.getElementById('pokeImg').src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/luxury-ball.png";
-    updateUI();
-}
 function runAway() { document.getElementById('msgText').innerText = "逃走了！"; setTimeout(resetBattle, 1200); }
 function openModal(id) { if(id === 'taskModal') renderTasks(); if(id === 'adminModal') updateMonthlyStats(); document.getElementById(id).style.display = 'block'; }
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); }
@@ -344,11 +331,16 @@ function renderTasks() {
     document.getElementById('taskContainer').innerHTML = ts.map(t => { const p = (t.c / t.m) * 100; return `<div class="task-box"><b>${t.n}</b><br><small>${t.c}/${t.m} (獎勵: ${t.r})</small><div class="progress-container"><div class="progress-fill" style="width:${p}%"></div></div></div>`; }).join('');
 }
 
-// 相容性升級
+// 註冊 Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => { console.log('SW Registered'); }).catch(err => { console.log('SW Failed', err); });
+    });
+}
+
 const saved = localStorage.getItem('pokeClassic_v31');
 if(saved) {
     state = JSON.parse(saved);
-    // 如果舊存檔是數字陣列，自動轉換
     if (state.owned.length > 0 && typeof state.owned[0] === 'number') {
         state.owned = state.owned.map(id => ({id, shiny: false}));
         state.buddy = {id: state.buddy, shiny: false};
