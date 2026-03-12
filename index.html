@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PokeMaster v60.0 - 終極記帳冒險</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root { 
             --p: #2d5a27; --bg: #f0f2f5; --text: #2c3e50; --accent: #f1c40f;
@@ -76,13 +76,7 @@
 .hp-red { background-color: #f44336 !important; }
         .encounter-progress { position: absolute; top: 10px; left: 10px; width: 120px; font-size: 10px; background: rgba(255,255,255,0.7); padding: 5px; border-radius: 5px; }
 
-        /* 圖鑑佈局 */
-        .dex-container { display: flex; height: calc(100vh - 80px); }
-        .dex-sidebar { width: 35%; overflow-y: auto; background: #ddd; border-right: 1px solid #bbb; }
-        .dex-main { width: 65%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 20px; }
-        .dex-item { padding: 12px 5px; border-bottom: 1px solid #ccc; font-size: 13px; text-align: center; cursor: pointer; }
-        .dex-item.active { background: var(--p); color: white; }
-
+        
         /* 底部控制面板 (2列4欄) */
         .control-panel { 
             display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);
@@ -114,7 +108,32 @@
         @keyframes ballShake { 0%, 100% { transform: translate(230px, -160px) rotate(0deg); } 25% { transform: translate(230px, -160px) rotate(15deg); } 75% { transform: translate(230px, -160px) rotate(-15deg); } }
         .mega-fx { filter: drop-shadow(0 0 10px var(--mega)); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .gotcha-text { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); color: gold; font-size: 40px; font-weight: 900; text-shadow: 2px 2px #000; z-index: 2000; display: none; }
+        .gotcha-text {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    /* 漸層色彩 */
+    background: linear-gradient(to bottom, #FFF59D 0%, #FFD600 50%, #FF8F00 100%);
+    
+    /* --- 兼容性定義區 --- */
+    -webkit-background-clip: text; /* Safari & Chrome 舊版 */
+    background-clip: text;         /* 標準屬性 (Firefox & 現代瀏覽器) */
+    -webkit-text-fill-color: transparent; /* 必須搭配 -webkit 前綴才能生效 */
+    
+    /* 視覺增強 */
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) 
+            drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.5));
+            
+    font-size: 52px;
+    font-weight: 900;
+    font-family: "Arial Black", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    z-index: 2000;
+    display: none;
+    letter-spacing: 4px;
+    white-space: nowrap;
+}
     </style>
 <style>
   /* 舞台：草叢與寶可夢演戲的地方 */
@@ -150,8 +169,8 @@
 
   /* 寶可夢圖片：初始設定為縮小且全黑 */
   #enemyImg {
-    width: 150px;
-    height: 150px;
+    width: 100px;
+    height: 100px;
     object-fit: contain;
     transform: scale(0.1); 
     filter: brightness(0); 
@@ -168,116 +187,89 @@
   .encounter-active .grass-right { transform: translateX(110%); }
 </style>
 <style>
-    .csv-item {
+  /* --- 搜尋明細清單項 (整合版) --- */
+
+.csv-item {
     display: flex;
     align-items: center;
-    gap: 8px;  /* 稍微加大間距 */
-    padding: 10px;  /* 增加內邊距讓顯示區域更大 */
-    margin-bottom: 8px;  /* 調整底部間距 */
+    gap: 12px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
     background: white;
-    border-radius: 15px;  /* 調整圓角 */
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);  /* 增加陰影 */
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s;
 }
 
-.csv-date, .csv-cat, .csv-amt {
-    font-size: 14px;  /* 字體稍微放大 */
-}
-
+/* 1. 日期 */
 .csv-date {
-    width: 130px;
-    font-weight: bold;
-    color: #333;
-}
-
-.csv-cat {
     width: 90px;
     font-weight: bold;
-    color: #666;
+    color: #444;
+    flex-shrink: 0;
+    font-family: monospace;
 }
 
+/* 2. 類別 (給個小標籤感) */
+.csv-cat {
+    width: 70px;
+    color: #666;
+    font-size: 13px;
+    background: #f0f0f0;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+/* 3. 備註 (自動填滿) */
 .csv-note {
     flex: 1;
+    min-width: 0;
     font-size: 14px;
-    border: none;
-    border-bottom: 1px solid #ddd;
-    padding: 4px;
-    font-style: italic;  /* 加上斜體效果 */
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 文字過長自動顯示 ... */
 }
 
+/* 4. 金額 */
 .csv-amt {
-    width: 70px;
+    width: 80px;
     text-align: right;
     font-weight: bold;
-    color: #2c7;
+    color: #e67e22; /* 暖橘色，醒目但不刺眼 */
+    flex-shrink: 0;
 }
 
-/* 手機版 */
-@media (max-width: 600px) {
+/* 📱 手機版調整：自動轉為兩排佈局 */
+@media (max-width: 480px) {
     .csv-item {
         flex-wrap: wrap;
-        gap: 10px;
+        padding: 10px;
+        gap: 5px;
     }
 
-    .csv-date {
-        width: 40%;
+    /* 第一排：日期與類別 */
+    .csv-date { width: auto; flex: 1; }
+    .csv-cat { width: auto; }
+
+    /* 第二排：備註與金額 */
+    .csv-note { 
+        width: 65%; 
+        flex: none; 
+        order: 3; /* 強制排在後面 */
+        padding-top: 5px;
+        border-top: 1px dashed #eee;
     }
-
-    .csv-cat {
-        width: 40%;
-    }
-
-    .csv-note {
-        width: 100%;
-    }
-
-    .csv-amt {
-        width: 100%;
-        text-align: right;
+    .csv-amt { 
+        width: 30%; 
+        flex: 1; 
+        order: 4; 
+        padding-top: 5px;
+        border-top: 1px dashed #eee;
     }
 }
-
-/* 每一筆資料的外容器 */
-.csv-item-mobile {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 8px; /* 每一筆資料間的間隔 */
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* 兩排之間的垂直距離 */
-}
-
-/* 每排內部的佈局 */
-.csv-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-/* 調整輸入框比例 */
-.csv-date, .csv-cat {
-    flex: 1; /* 平分空間 */
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.csv-note {
-    flex: 3; /* 讓商家備註長一點 */
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.csv-amt {
-    flex: 1;
-    text-align: right;
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #e67e22; /* 給金額一個明顯的顏色 */
-}
-
 </style>
 <style>
     /* -------------------------------------------
@@ -310,7 +302,242 @@
     backdrop-filter: blur(3px);
 }
 </style>
+<style>
+/* --- [修正版] 寶貝球主題圖鑑 (解決層級遮擋問題) --- */
 
+/* 1. 最外層：大寶貝球外殼 */
+.pball-shell {
+    background: linear-gradient(to bottom, #e3350d 46%, #333 46%, #333 54%, #fff 54%);
+    border: 25px solid #222; 
+    border-radius: 60px; 
+    padding: 30px 17px; 
+    margin: 8px 8px 40px 8px; 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset -10px -10px 0 rgba(0,0,0,0.1);
+    position: relative;
+    /* 🚩 修正：建立新的層疊上下文，確保內部 z-index 生效 */
+    z-index: 0; 
+}
+
+/* 🚩 關鍵修正：焊接延伸黑底座 */
+.pball-shell::after {
+    content: "";
+    position: absolute;
+    /* 🚩 修正：負值定位，讓底座與黑色邊框完美融合並覆蓋在內容邊角 */
+    right: -15px; 
+    bottom: -15px; 
+    width: 110px;
+    height: 115px;
+    background: #222; 
+    border-radius: 50px 20px 60px 25px; 
+    /* 🚩 修正：層級提高，必須大於螢幕容器的 z-index */
+    z-index: 3; 
+    box-shadow: -5px -5px 15px rgba(0,0,0,0.3);
+    pointer-events: none; /* 確保點擊能穿透到下方的 B 鍵區域 */
+}
+
+/* 2. 中間方框：嵌入的圖鑑主體 */
+.dex-container {
+    display: flex;
+    background: #333; 
+    border: 4px solid #444;
+    border-radius: 10px;
+    height: calc(100vh - 240px); 
+    overflow: hidden;
+    position: relative;
+    /* 🚩 修正：層級降低，避免蓋過延伸黑底 */
+    z-index: 1; 
+}
+
+/* --- [3, 4, 5 功能區塊 100% 原始代碼，無更動] --- */
+.dex-sidebar {
+    width: 45%;
+    background: #51ad60; 
+    overflow-y: auto;
+    border-right: 4px solid #222;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dex-item {
+    padding: 12px 8px 12px 38px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    color: #1a1a1a;
+    font-size: 14px;
+    position: relative;
+    cursor: pointer;
+    font-family: monospace;
+}
+
+.dex-item::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #333;
+    border-radius: 50%;
+    background: 
+        radial-gradient(circle at center, #fff 15%, #333 15.5%, #333 25%, transparent 25.5%),
+        linear-gradient(to bottom, #ff0000 44%, #333 44%, #333 56%, #fff 56%);
+}
+
+.dex-item.active { background: rgba(255, 255, 255, 0.4); font-weight: bold; }
+.dex-item.active::before { animation: pball-bounce 0.6s infinite ease-in-out; }
+
+@keyframes pball-bounce {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-80%) scale(1.1); }
+}
+
+.dex-main {
+    width: 55%;
+    background: #dedede;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 5px;
+    overflow-y: auto;
+}
+
+/* --- [新 B 鍵區] 修正定位與層級 --- */
+.dex-b-button-wrapper {
+    position: absolute;
+    /* 🚩 修正：將 B 鍵推向右下角邊框交界處 */
+    right: -5px; 
+    bottom: 5px; 
+    width: 85px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    /* 🚩 修正：最高層級，保證可點擊離開 */
+    z-index: 10; 
+}
+
+.dex-close-btn {
+    width: 50px;
+    height: 50px;
+    background: #c0392b;
+    border: 4px solid #111;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    font-size: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 5px 0 #851e13;
+    transition: all 0.1s;
+    user-select: none;
+}
+
+.dex-b-button-wrapper:active .dex-close-btn {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #851e13;
+}
+
+.btn-label {
+    color: #777;
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 6px;
+    letter-spacing: 1px;
+}
+</style>
+<style>
+/* --- 每日野外寶可夢動畫樣式 --- */
+
+/* 1. 容器基礎定位 */
+.wild-encounter-unit {
+    position: fixed; /* 確保它浮動在所有 UI 之上 */
+    cursor: pointer;
+    z-index: 100;
+}
+
+/* 2. 初始狀態：模擬寶石版 NPC 挑戰氣泡 */
+.wild-encounter-unit .exclamation {
+    position: absolute;
+    top: -50px; /* 稍微再往上提一點，給氣泡空間 */
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+
+    /* 🚩 氣泡外框設計 */
+    background: #fff; /* 白色底框 */
+    border: 3px solid #333; /* 黑色深邊框 */
+    border-radius: 8px; /* 寶石版風格的圓角 */
+    padding: 2px 10px;
+    
+    /* 🚩 字體設計 */
+    color: #ff3e3e; /* 經典紅色 */
+    font-weight: 900;
+    font-size: 28px;
+    font-family: "Courier New", Courier, monospace; /* 像素感字體 */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+}
+
+/* 🚩 增加氣泡下方的小尾巴 (尖角) */
+.wild-encounter-unit .exclamation::after {
+    content: "";
+    position: absolute;
+    bottom: -10px; /* 貼在框框底部 */
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #333; /* 黑色尖角邊框 */
+}
+
+/* 🚩 氣泡內部的白色小尖角 (蓋在黑色上面) */
+.wild-encounter-unit .exclamation::before {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #fff; /* 白色尖角中心 */
+    z-index: 1;
+}
+
+/* 🚩 當觸發顯示時的動畫效果 (模擬驚訝的震動感) */
+.wild-encounter-unit.show-exclamation .exclamation {
+    transform: translateX(-50%) scale(1.2); /* 稍微放大增加衝擊力 */
+    opacity: 1;
+    animation: exclamation-pop 0.4s ease-out;
+}
+
+@keyframes exclamation-pop {
+    0% { transform: translateX(-50%) scale(0); }
+    50% { transform: translateX(-50%) scale(1.4); } /* 瞬間撐大 */
+    100% { transform: translateX(-50%) scale(1.2); }
+}
+
+/* 3. 初始狀態：寶可夢圖片 */
+.wild-encounter-unit img {
+    transition: transform 0.2s ease; /* 設定平滑放大的動畫時間 */
+}
+
+/* 4. 【重點】點擊後啟動的狀態 (JS 會幫忙加上這個 class) */
+.active-encounter img {
+    transform: scale(1.6); /* 圖片放大到 1.6 倍 */
+}
+
+.active-encounter .exclamation {
+    opacity: 1; /* 變回不透明 */
+    transform: translateX(-50%) scale(1.3); /* 驚嘆號彈跳出來並放大 */
+}
+</style>
 </head>
 <body>
 
@@ -318,7 +545,7 @@
 
     <div class="battle-stage">
 
-        <div id="gotcha" class="gotcha-text">GOTCHA!</div>
+        <div id="gotcha" class="gotcha-text">抓到寶可夢了!</div>
 
         <div class="encounter-progress">遭遇進度: <span id="enc-prog">0</span> / 200</div>
 
@@ -400,21 +627,37 @@
     </button>
 </dialog>
 
-<div id="dexPage" class="page">
-    <div class="dex-container">
-        <div class="dex-sidebar" id="dexNav"></div>
-        <div class="dex-main">
-            <h3 id="dexTitle">No.???</h3>
-            <img id="dexImg" src="" style="width:160px; height:160px; object-fit:contain;">
-            <div id="dexCtrl" style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:5px;">
-                <button onclick="setDexShiny(false)" style="padding:8px;">一般型態</button>
-                <button onclick="setDexShiny(true)" id="shinyBtn" style="padding:8px;">✨ 閃光型態</button>
-                <button onclick="assignBuddy()" style="grid-column: span 2; background:var(--p); color:white; padding:12px; border:none; border-radius:20px; margin-top:10px;">就決定是你了！</button>
-            </div>
+<div id="dexPage" class="page" style="display:none;">
+    <div class="pball-shell">
+        <div class="dex-container">
+            <div class="dex-sidebar" id="dexNav"></div>
+            
+            <div class="dex-main">
+                <h3 id="dexTitle" style="margin: 0 0 10px 0; color: #333; font-size: 18px; font-family: monospace;">No.???</h3>
+                
+                <div class="dex-image-container" style="background: white; border: 3px solid #333; border-radius: 12px; padding: 10px; position: relative;">
+                    <img id="dexImg" src="" style="width: 130px; height: 130px; object-fit: contain;">
+                    <div id="megaTag" style="position: absolute; top: 5px; right: 8px; font-size: 18px; display: none;">🧬</div>
+                </div>
+
+                <div id="dexCtrl" style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+                    <button onclick="setDexShiny(false)" class="btn-dex-sm">一般型態</button>
+                    <button onclick="setDexShiny(true)" id="shinyBtn" class="btn-dex-sm">✨ 閃光</button>
+                    
+                    <div id="megaGroup" style="grid-column: span 2; display: none; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px;">
+                        <button id="mBtnSingle" onclick="toggleMega('mega')" style="grid-column: span 2; background: #9b59b6; color: white; border: 2px solid #333; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 12px;">🧬 Mega 進化</button>
+                        <button id="mBtnX" onclick="toggleMega('x')" style="background: #3498db; color: white; border: 2px solid #333; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 12px;">Mega X</button>
+                        <button id="mBtnY" onclick="toggleMega('y')" style="background: #e67e22; color: white; border: 2px solid #333; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 12px;">Mega Y</button>
+                    </div>
+
+                    <button onclick="assignBuddy()" style="grid-column: span 2; background: #dc0a2d; color: white; padding: 12px; border: 2px solid #333; border-radius: 25px; margin-top: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px rgba(0,0,0,0.2);">就決定是你了！</button>
+                </div>
+            </div> 
+        </div> <div class="dex-b-button-wrapper" onclick="back()">
+            <div class="dex-close-btn">B</div>
         </div>
-    </div>
-    <button class="btn-back" onclick="back()">✖ 關閉圖鑑</button>
-</div>
+        
+    </div> </div>
 
 
 <div id="guidePage" class="page" style="background: #1a1a1a; color: white; display: none;">
@@ -501,16 +744,16 @@
         <h3>💰 精靈商店 (可用 P$: <span id="shop-bal">0</span>)</h3>
         <div style="display:flex; flex-direction:column; gap:10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" style="vertical-align:middle"> 精靈球 (P$ 100)</span>
-                <button onclick="buy('poke', 100)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
+                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" style="vertical-align:middle"> 精靈球 (P$ 200)</span>
+                <button onclick="buy('poke', 200)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" style="vertical-align:middle"> 超級球 (P$ 300)</span>
-                <button onclick="buy('great', 300)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
+                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" style="vertical-align:middle"> 超級球 (P$ 500)</span>
+                <button onclick="buy('great', 500)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" style="vertical-align:middle"> 高級球 (P$ 500)</span>
-                <button onclick="buy('ultra', 500)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
+                <span><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" style="vertical-align:middle"> 高級球 (P$ 700)</span>
+                <button onclick="buy('ultra', 700)" style="background:var(--p); color:white; border:none; padding:8px 15px; border-radius:5px;">購買</button>
             </div>
         </div>
     </div>
@@ -520,17 +763,32 @@
     <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">領取後可獲得 5 顆精靈球並開啟御三家捕捉戰鬥</p>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <button id="btn-gift-oak" onclick="openGiftSelector('oak', false)" class="btn-doc">
-            關都地區｜大木博士啟程禮
+        <button id="btn-gift-oak" onclick="openGiftSelector('oak', false)" class="btn-doc" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px dashed #3498db; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#2c3e50;">關都地區｜大木博士啟程禮</span>
         </button>
-        <button id="btn-gift-elm" onclick="openGiftSelector('elm', false)" class="btn-doc">
-            城都地區｜空木博士啟程禮
+
+        <button id="btn-gift-elm" onclick="openGiftSelector('elm', false)" class="btn-doc" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px dashed #3498db; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/175.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#2c3e50;">城都地區｜空木博士啟程禮</span>
         </button>
-        <button id="btn-gift-birch" onclick="openGiftSelector('birch', false)" class="btn-doc">
-            豐緣地區｜小田卷博士啟程禮
+
+        <button id="btn-gift-birch" onclick="openGiftSelector('birch', false)" class="btn-doc" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px dashed #3498db; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/261.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#2c3e50;">豐緣地區｜小田卷博士啟程禮</span>
         </button>
-        <button id="btn-gift-rowan" onclick="openGiftSelector('rowan', false)" class="btn-doc">
-            神奧地區｜山梨博士啟程禮
+
+        <button id="btn-gift-rowan" onclick="openGiftSelector('rowan', false)" class="btn-doc" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px dashed #3498db; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/396.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#2c3e50;">神奧地區｜山梨博士啟程禮</span>
         </button>
     </div>
 </div>
@@ -540,17 +798,32 @@
     <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">獲得 5 顆高級球，並開啟**必閃**傳奇寶可夢戰鬥</p>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <button id="btn-gift-red" onclick="onChampionBtnClick('red')" class="btn-champion">
-            關都地區｜來自赤紅的認可
+        <button id="btn-gift-red" onclick="onChampionBtnClick('red')" class="btn-champion" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px solid #f1c40f; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(212,175,55,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#b8860b;">關都地區｜赤紅的傳記祝福</span>
         </button>
-        <button id="btn-gift-lance" onclick="onChampionBtnClick('lance')" class="btn-champion">
-            城都地區｜來自阿渡的認可
+
+        <button id="btn-gift-lance" onclick="onChampionBtnClick('lance')" class="btn-champion" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px solid #f1c40f; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(212,175,55,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/149.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#b8860b;">城都地區｜阿渡的龍之覺醒</span>
         </button>
-        <button id="btn-gift-steven" onclick="onChampionBtnClick('steven')" class="btn-champion">
-            豐緣地區｜來自大吾的認可
+
+        <button id="btn-gift-steven" onclick="onChampionBtnClick('steven')" class="btn-champion" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px solid #f1c40f; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(212,175,55,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/376.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#b8860b;">豐緣地區｜大吾的鋼鐵意志</span>
         </button>
-        <button id="btn-gift-cynthia" onclick="onChampionBtnClick('cynthia')" class="btn-champion">
-            神奧地區｜來自竹蘭的認可
+
+        <button id="btn-gift-cynthia" onclick="onChampionBtnClick('cynthia')" class="btn-champion" style="display:flex; align-items:center; gap:8px; padding: 8px; text-align:left; border: 1.5px solid #f1c40f; background:#fff; border-radius:12px;">
+            <div style="width:35px; height:35px; flex-shrink:0; background:rgba(212,175,55,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/445.png" style="width:100%; height:auto;">
+            </div>
+            <span style="font-weight:bold; font-size:13px; color:#b8860b;">神奧地區｜竹蘭的遺跡之魂</span>
         </button>
     </div>
 </div>
@@ -684,35 +957,45 @@
         </div>
 
         <hr style="margin: 20px 0;">
+
         <h3>📜 紀錄與載入</h3>
         <button onclick="document.getElementById('csvFile').click()" style="background:var(--p); color:white; width:100%; padding:15px; border:none; border-radius:10px; margin-bottom:15px;">📑 導入財政部 CSV 載具資料</button>
         <input type="file" id="csvFile" style="display:none" onchange="handleCSV(event)">
+        
         <div id="csvPreviewArea" style="display:none; margin-top:20px; padding:10px; border:2px dashed #ccc; border-radius:10px;">
-    <h3>📋 匯入預覽</h3>
-    <p style="font-size:12px; color:gray;">(在此修改分類後點擊「正式導入」)</p>
-    <div id="previewList" style="max-height:300px; overflow-y:auto; margin-bottom:10px;"></div>
-    <div style="display:flex; gap:10px;">
-        <button onclick="confirmImport()" style="flex:1; background:#28a745; color:white; padding:10px; border:none; border-radius:5px;">✅ 正式導入</button>
-        <button onclick="cancelImport()" style="flex:1; background:#6c757d; color:white; padding:10px; border:none; border-radius:5px;">✖ 取消</button>
-    </div>
-</div>
-<hr>
-        <p style="font-size:13px; color:gray;">手動紀錄查詢)</p>
+            <h3>📋 匯入預覽</h3>
+            <h4 id="importCount" style="margin: 5px 0; color: var(--p); font-size: 14px;">預覽資料數量: 0</h4>
+            <p style="font-size:12px; color:gray;">(在此修改分類後點擊「正式導入」)</p>
+            <div id="previewList" style="max-height:300px; overflow-y:auto; margin-bottom:10px;"></div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="confirmImport()" style="flex:1; background:#28a745; color:white; padding:10px; border:none; border-radius:5px;">✅ 正式導入</button>
+                <button onclick="cancelImport()" style="flex:1; background:#6c757d; color:white; padding:10px; border:none; border-radius:5px;">✖ 取消</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <p style="font-size:13px; color:gray; margin-bottom: 5px;">手動紀錄查詢</p>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
-            <input type="date" id="hStart"> <input type="date" id="hEnd">
+            <input type="date" id="hStart" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;"> 
+            <input type="date" id="hEnd" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
         </div>
         <button onclick="searchHistory()" style="background:var(--dark); color:white; width:100%; padding:10px; border:none; border-radius:5px;">搜尋明細</button>
-        <div id="historyList" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
-    </div>
-    <button class="btn-back" onclick="back()">✖ 關閉</button>
+        
+        <div id="historyList" style="margin-top:10px; max-height:200px; overflow-y:auto; border: 1px solid #eee; border-radius: 5px; background: #fafafa;"></div>
+    </div> <button class="btn-back" onclick="back()" 
+            style="margin: 15px auto 30px auto; display: block; width: calc(100% - 24px); box-sizing: border-box;">
+        ✖ 關閉
+    </button>
 </div>
+
 
 <div id="adminPage" class="page">
     <div class="card">
         <h3>⚙️ 設定與管理</h3>
-        <button onclick="exportData()" style="background:#2980b9; color:white; width:100%; padding:12px; margin-bottom:10px; border:none; border-radius:5px;">💾 匯出全存檔 (JSON)</button>
+        <button onclick="exportData()" style="background:#2980b9; color:white; width:100%; padding:12px; margin-bottom:10px; border:none; border-radius:5px;">💾 匯出全存檔 </button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-        <button onclick="document.getElementById('importFile').click()" style="background:#27ae60; color:white; width:100%; padding:12px; margin-bottom:10px; border:none; border-radius:5px;">📂 讀取存檔 (JSON)</button>
+        <button onclick="document.getElementById('importFile').click()" style="background:#27ae60; color:white; width:100%; padding:12px; margin-bottom:10px; border:none; border-radius:5px;">📂 讀取存檔 </button>
         <hr>
         <p style="font-size:12px; color:gray;">區間清理：匯出檔案並刪除明細（統計總額保留）</p>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
@@ -862,7 +1145,7 @@ const EVO_BRANCHES = {
 let s = {
     bal: 1000, 
     pool: 0, 
-    items: {poke:10, great:5, ultra:0, master:1, stone:0, mstone:0},
+    items: {poke:10, great:5, ultra:1, master:1, stone:1, mstone:1},
     prog: {evo:0, mega:0}, 
     buddyId: 25,
     isShinyBuddy: false, 
@@ -880,66 +1163,110 @@ let s = {
     nextExp: 100      // 升級門檻
 };
 
+const DOCTOR_DATA = {
+    'oak':   { name: '關都地區｜大木博士的啟程禮', ids: [1, 4, 7], sceneIconId: 151 }, 
+    'elm':   { name: '城都地區｜空木博士的啟程禮', ids: [152, 155, 158], sceneIconId: 175 },
+    'birch': { name: '豐緣地區｜小田卷博士的啟程禮', ids: [252, 255, 258], sceneIconId: 261 }, 
+    'rowan': { name: '神奧地區｜山梨博士的啟程禮', ids: [387, 390, 393], sceneIconId: 396 }
+};
+
+const CHAMPION_DATA = {
+    'red':    { name: '關都地區｜赤紅的傳奇祝福', ids: [131, 143, 149] }, // 拉普拉斯、卡比獸、快龍
+    'lance':  { name: '城都地區｜阿渡的龍之覺醒', ids: [230, 248, 212] }, // 刺龍王、班基拉斯、巨鉗螳螂
+    'steven': { name: '豐緣地區｜大吾的鋼鐵意志', ids: [376, 373, 306] }, // 巨金怪、暴飛龍、波士可多拉
+    'cynthia':{ name: '神奧地區｜竹蘭的遺跡之魂', ids: [445, 448, 350] }  // 烈咬陸鯊、路卡利歐、美納斯
+};
+
 // --- [ 初始化與存檔讀取 ] ---
 window.onload = () => {
     const saved = localStorage.getItem('pokemaster_v60');
     if(saved) {
         const loaded = JSON.parse(saved);
-        // [修改點 1] 使用展開運算子合併，並額外確保新屬性 claimedGifts 存在
+        // 合併存檔資料
         s = { 
             ...s, 
             ...loaded, 
             claimedGifts: (loaded.claimedGifts || []) 
         }; 
     } else {
-        // 如果是全新玩家，初始化該陣列
         if (!s.claimedGifts) s.claimedGifts = [];
     }
+ // 如果 s 已經存在，請確保它包含這兩個欄位
 
+s.dailyWild = s.dailyWild || {
+
+    claimed: false,  // 紀錄今天是否已經抓到了
+
+    lastDate: ""     // 紀錄上一次遇到的日期
+
+};
     document.getElementById('recDate').valueAsDate = new Date();
     document.getElementById('chartMonthPicker').value = new Date().toISOString().substring(0, 7);
     
-    // [修改點 2] 讀檔後立即執行一次按鈕鎖定，不影響其他 UI 更新
-    lockClaimedGifts(); 
+    // ✅ [核心修改]：將原本的 lockClaimedGifts(); 改為執行 updateGiftButtons();
+    // 這樣重新整理後，JS 才會立即掃描存檔，把博士的土狼犬名場面重新畫上去
+    updateGiftButtons(); 
 
     updateUI();
     setInterval(tickMega, 1000);
 };
 
-// 任務重置檢查函式 (含每日與每週)
 function checkTaskReset() {
+    // 🚩 [安全性檢查]：確保 s.tasks 結構存在，避免讀取不到屬性而報錯
+    if (!s.tasks) {
+        s.tasks = { 
+            dailyDate: "", weeklyDate: "", 
+            dRec: 0, dCatch: 0, 
+            wRec: 0, wCatch: 0, 
+            claimed: [] 
+        };
+    }
+
     const now = new Date();
     const today = now.toDateString();
     
-    // 計算「本週」標籤 (以該週週一為基準)
-    const day = now.getDay(); // 0(日) 到 6(六)
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // 調整至週一
-    const mondayDate = new Date(now.setDate(diff)).toDateString();
+    // 🚩 [關鍵修正]：建立一個 tempDate 副本來計算週一，不要動到原本的 now
+    const tempDate = new Date(now.getTime()); 
+    const day = tempDate.getDay(); 
+    const diff = tempDate.getDate() - day + (day === 0 ? -6 : 1);
+    tempDate.setDate(diff);
+    const mondayDate = tempDate.toDateString();
 
     let hasChanged = false;
 
     // 1. 每日重置判定
+    // 比較「存檔日期」與「今天」是否不同
     if (s.tasks.dailyDate !== today) {
+        console.log("📅 偵測到日期變更，正在重置每日任務...");
         s.tasks.dailyDate = today;
         s.tasks.dRec = 0;   
         s.tasks.dCatch = 0; 
-        s.tasks.claimed = s.tasks.claimed.filter(id => !id.includes('daily'));
-        hasChanged = true;
-    }
-// 2. 每週重置判定 (每週一重置)
-    if (s.tasks.weeklyDate !== mondayDate) {
-        s.tasks.weeklyDate = mondayDate;
-        s.tasks.wRec = 0;   
-        s.tasks.wCatch = 0; 
-        s.tasks.claimed = s.tasks.claimed.filter(id => !id.includes('weekly'));
+        // 過濾掉所有包含 'daily' 字眼的已領取紀錄
+        s.tasks.claimed = (s.tasks.claimed || []).filter(id => !id.includes('daily'));
         hasChanged = true;
     }
 
-    // 如果有變動，立即存檔
+    // 2. 每週重置判定 (每週一重置)
+    if (s.tasks.weeklyDate !== mondayDate) {
+        console.log("🗓️ 偵測到新的一週，正在重置每週任務...");
+        s.tasks.weeklyDate = mondayDate;
+        s.tasks.wRec = 0;   
+        s.tasks.wCatch = 0; 
+        // 過濾掉所有包含 'weekly' 字眼的已領取紀錄
+        s.tasks.claimed = (s.tasks.claimed || []).filter(id => !id.includes('weekly'));
+        hasChanged = true;
+    }
+
+    // 如果有變動，立即存檔並更新 UI
     if (hasChanged) {
         localStorage.setItem('pokemaster_v60', JSON.stringify(s));
+        
+        // 🚩 [建議]：如果有渲染任務的函式，要在這裡重新呼叫
+        if (typeof renderTasks === "function") {
+            renderTasks();
+        }
     }
-};
+}
 
 // 新增第二個參數 isChampion，預設為 false
 function openGiftSelector(docKey, isChampion = false) {
@@ -1225,50 +1552,140 @@ function updateUI() {
         let bImg;
         const statusFolder = s.isShinyBuddy ? 'shiny' : 'normal';
 
+        // 🚩 修正 1：直接檢查存檔中的 buddyMega 變數是否有值
+        const isMegaActive = (s.buddyMega && s.buddyMega !== "");
+
         if (isMegaActive) {
-            // --- Mega 狀態：使用你的 GitHub 伺服器 ---
-            bEl.style.width = "200px";
-            bEl.style.height = "200px";
+            // --- Mega 狀態 ---
+            bEl.style.width = "150px";
+            bEl.style.height = "150px";
             bEl.classList.add('mega-fx');
 
-            let fileName = s.buddyId;
-            // 處理特殊分支 (噴火龍 6, 超夢 150)
-            if (s.buddyId === 6 || s.buddyId === 150) {
-                const suffix = s.currentMegaType || 'x';
-                fileName = `${s.buddyId}${suffix}`;
+            // 🚩 修正 2：統一使用 s.buddyMega 作為後綴判定
+            let suffix = "";
+            if (s.buddyMega === 'x' || s.buddyMega === 'y') {
+                suffix = s.buddyMega;
             }
 
-            // 你的正確網址路徑
+            // 🚩 修正 3：組合檔名 (例如: 6x.png 或 3.png)
+            const fileName = `${s.buddyId}${suffix}`;
             bImg = `https://paulie0102-bear.github.io/Bear/img/mega/${statusFolder}/${fileName}.png`;
 
         } else {
-            // --- 一般狀態：使用 PokeAPI 官方高清圖 ---
-            bEl.style.width = "150px";
-            bEl.style.height = "150px";
+            // --- 一般狀態 ---
+            bEl.style.width = "100px";
+            bEl.style.height = "100px";
             bEl.classList.remove('mega-fx');
 
             const shinyPath = s.isShinyBuddy ? 'shiny/' : '';
-            // 建議用 official-artwork，解析度比原本的小圖好很多
             bImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${shinyPath}${s.buddyId}.png`;
         }
 
-        // 執行替換圖片
         bEl.src = bImg;
 
-        // 備援機制：如果圖片加載失敗（如 GitHub 404），回退到官方普通小圖
         bEl.onerror = () => {
             const apiPath = s.isShinyBuddy ? 'shiny/' : '';
             bEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiPath}${s.buddyId}.png`;
-            console.warn(`[圖片加載警告]: 找不到資源 ${bImg}，已自動切換備援。`);
-            bEl.onerror = null; // 避免備援也失敗時造成無限迴圈
+            console.warn(`[圖片加載警告]: 找不到資源 ${bImg}，已切換備援。`);
+            bEl.onerror = null;
         };
     }
 
     // 5. 渲染背包
     if (typeof renderBag === 'function') renderBag();
+    // 🚩 [新增] 在所有 UI 更新完後，執行每日野怪的判斷與渲染
+    renderDailyWild();
 }
 
+function renderDailyWild() {
+    // 🚩 [新增判斷]：如果現在正在戰鬥中，就不要執行生怪邏輯
+    // 請根據你切換畫面的邏輯修改，例如：
+    const battleDiv = document.getElementById('battle-screen'); // 或是你的戰鬥容器 ID
+    if (battleDiv && battleDiv.style.display !== 'none') {
+        return; // 如果戰鬥畫面開著，直接結束，不要生怪
+    }    
+    // 🚩 [防護機制]：如果 s.dailyWild 不存在，立即初始化它
+    if (!s.dailyWild) {
+        s.dailyWild = {
+            claimed: false,
+            lastDate: ""
+        };
+    }
+    const today = new Date().toDateString();
+    
+    // 1. 跨日重置判定：如果紀錄的日期跟今天不同，就重置捕捉狀態為 false
+    if (s.dailyWild.lastDate !== today) {
+        s.dailyWild.claimed = false;
+        s.dailyWild.lastDate = today;
+    }
 
+    // 2. 取得目前的圖標元件
+    const oldIcon = document.getElementById('dailyWildIcon');
+    
+    // 3. 判斷顯示邏輯
+    if (s.dailyWild.claimed) {
+        // 如果今天已經抓到了，確保畫面上的圖標被移除
+        if (oldIcon) oldIcon.remove();
+        return;
+    }
+
+    // 4. 如果今天還沒抓到，且畫面上沒怪，就刷出一隻新的
+    if (!oldIcon) {
+        spawnDailyWildIcon();
+    }
+}
+
+function spawnDailyWildIcon() {
+    // 隨機選一個 ID (1-493)
+    const randomId = Math.floor(Math.random() * 493) + 1;
+    // 隨機決定閃光 (5% 機率)
+    const isShiny = Math.random() < 0.05;
+    // 隨機決定水平位置 (15% - 85% 避開邊緣)
+    const posX = Math.floor(Math.random() * 70) + 15;
+
+    const wildDiv = document.createElement('div');
+    wildDiv.id = 'dailyWildIcon';
+    wildDiv.className = 'wild-encounter-unit';
+    
+    // 定位在選單上方
+    wildDiv.style.left = posX + "%";
+    wildDiv.style.bottom = "150px"; 
+    wildDiv.style.position = "fixed"; // 確保是固定定位
+    wildDiv.style.zIndex = "999";     // 數字越大層級越高，建議設 100~999 之間
+
+    const imgPath = isShiny ? 'shiny/' : '';
+    wildDiv.innerHTML = `
+        <div class="exclamation">!</div>
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${imgPath}${randomId}.png" style="width: 80px; height: 80px;">
+    `;
+
+    // --- 🎮 [修改重點]：加入點擊互動遊程 ---
+    wildDiv.onclick = function() {
+        // 1. 鎖定點擊：防止在動畫期間重複點擊導致開啟多個戰鬥
+        wildDiv.onclick = null;
+        
+        // 2. 觸發第一步提到的 CSS 動畫 (放大 + 驚嘆號)
+        wildDiv.classList.add('active-encounter');
+
+        // 3. 演出時間：延遲 600 毫秒（等待驚嘆號彈出動畫）後切換戰鬥
+        setTimeout(() => {
+            // 🟢 對接閃光邏輯：如果是閃光，開啟你的 s.forceShiny 開關
+            if (isShiny) {
+                s.forceShiny = true;
+            }
+
+            // 🟢 對接戰鬥流程：直接呼叫你原本寫好的函式
+            spawnEnemy(randomId);
+
+            // 4. 戰鬥開始後，從主畫面移除這個元素
+            // 注意：因為還沒設定 s.dailyWild.claimed = true，所以逃跑後重新整理會再刷出新的怪
+            wildDiv.remove();
+        }, 600);
+    };
+
+    document.body.appendChild(wildDiv);
+}
+    
 function getTitle(count) {
     if(count >= 493) return {name: "寶可夢大師", bonus: 50};
     if(count >= 400) return {name: "聯盟冠軍", bonus: 40};
@@ -1301,29 +1718,45 @@ function performEvolve() {
 
     if (targets[0] > 493) { alert("已達目前圖鑑上限"); return; }
 
+    // --- 內部小工具：安全獲取名字 ---
+    const getPName = (id) => POKEMON_NAMES[id] || `No.${id}`;
+
     if (targets.length > 1) {
-        // 強制更新標題，避免博士啟程禮字樣殘留
-        document.getElementById('evoTitle').innerText = `🧬 請選擇 No.${curId} 的進化分支`;
-        
+        // 1. 動態修改標題為：「請選擇 [目前名字] 的進化分支」
+        const titleEl = document.getElementById('evoTitle');
+        if (titleEl) {
+            titleEl.innerText = `🧬 請選擇 ${getPName(curId)} 的進化分支`;
+        }
+
         const container = document.getElementById('evoOptions');
         container.innerHTML = "";
         
         targets.forEach(id => {
             const card = document.createElement('div');
             card.className = 'evo-card';
+            const targetName = getPName(id); // 獲取目標名字
+
             card.innerHTML = `
                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" style="width:70px; height:70px;">
-                <p style="margin:5px 0 0; font-size:12px; color:white;">No.${id}</p>
+                <p style="margin:5px 0 0; font-size:13px; color:white; font-weight:bold;">${targetName}</p>
             `;
+            
             card.onclick = () => { 
-                if(confirm(`確定進化為 No.${id}？`)) executeEvolve(id); 
-                document.getElementById('evoDialog').close(); 
+                if(confirm(`確定要將夥伴進化為 ${targetName} 嗎？`)) {
+                    executeEvolve(id);
+                    document.getElementById('evoDialog').close();
+                }
             };
             container.appendChild(card);
         });
         document.getElementById('evoDialog').showModal();
     } else {
-        if (confirm(`消耗 1 顆進化石使夥伴進化？`)) executeEvolve(targets[0]);
+        // 單一路線進化
+        const targetId = targets[0];
+        const targetName = getPName(targetId);
+        if (confirm(`消耗 1 顆進化石使夥伴進化為 ${targetName}？`)) {
+            executeEvolve(targetId);
+        }
     }
 }
 
@@ -1342,10 +1775,16 @@ function tryMega() {
 
     const curId = s.buddyId;
     const dual = [6, 150]; // 噴火龍與超夢
+    
+    // 💡 獲取當前夥伴中文名字
+    const curName = POKEMON_NAMES[curId] || `No.${curId}`;
 
     if (dual.includes(curId)) {
-        // 修改標題
-        document.getElementById('evoTitle').innerText = `✨ 請選擇 Mega 進化型態`;
+        // 1. 修改標題為：[夥伴名字] 的 Mega 進化型態
+        const titleEl = document.getElementById('evoTitle');
+        if (titleEl) {
+            titleEl.innerText = `✨ ${curName} 的 Mega 進化`;
+        }
         
         const container = document.getElementById('evoOptions');
         container.innerHTML = "";
@@ -1354,17 +1793,20 @@ function tryMega() {
             const card = document.createElement('div');
             card.className = 'evo-card';
             
-            // 對應你的 GitHub 圖片路徑邏輯
             const statusFolder = s.isShinyBuddy ? 'shiny' : 'normal';
             const fileName = `${curId}${type}`;
             const bImg = `https://paulie0102-bear.github.io/Bear/img/mega/${statusFolder}/${fileName}.png`;
 
+            // 💡 顯示為 "Mega 噴火龍 X" 這種格式
+            const displayName = `Mega ${curName} ${type.toUpperCase()}`;
+
             card.innerHTML = `
-                <img src="${bImg}" style="width:80px; height:80px;">
-                <p style="margin:5px 0 0; font-size:12px; color:var(--p); font-weight:bold;">Mega ${type.toUpperCase()}</p>
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px;">
+                    <img src="${bImg}" style="width:80px; height:80px; filter: drop-shadow(0 0 8px var(--p));">
+                </div>
+                <p style="margin:8px 0 0; font-size:13px; color:var(--p); font-weight:bold;">${displayName}</p>
             `;
 
-            // 圖片報錯備援
             const imgEl = card.querySelector('img');
             imgEl.onerror = () => {
                 imgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${curId}.png`;
@@ -1372,17 +1814,19 @@ function tryMega() {
             };
 
             card.onclick = () => {
-                if (confirm(`確定進行 Mega 進化 ${type.toUpperCase()} 嗎？`)) {
+                if (confirm(`確定進行 ${displayName} 嗎？`)) {
                     executeMega(type);
+                    document.getElementById('evoDialog').close();
                 }
-                document.getElementById('evoDialog').close();
             };
             container.appendChild(card);
         });
         document.getElementById('evoDialog').showModal();
     } else {
-        // 單一路線 Mega 直接執行
-        if (confirm(`消耗 1 顆 Mega 石讓夥伴進化？`)) executeMega("");
+        // 單一路線 Mega
+        if (confirm(`消耗 1 顆 Mega 石讓 ${curName} 超進化？`)) {
+            executeMega("");
+        }
     }
 }
 
@@ -1537,7 +1981,7 @@ function spawnEnemy(targetId) { // 🔴 增加參數
 
     const displayName = `No.${String(id).padStart(3, '0')} ${curE.name}`;
     document.getElementById('enemyName').innerText = `${displayName}${isShiny ? ' (✨閃光)' : ''}`;
-    document.getElementById('turnInfo').innerText = "最大回合：7 (在此之前不會逃跑)";
+    document.getElementById('turnInfo').innerText = "7回合內，寶可夢不會逃跑";
     document.getElementById('msg').innerText = `✨ 野生的 ${curE.name} 出現了！`;
 
     // 延遲撥開草叢，之後恢復動畫
@@ -1612,7 +2056,13 @@ async function throwBall() {
         s.tasks.dCatch += 1;
         s.tasks.wCatch += 1;
         s.tasks.mCatch += 1;
-
+        
+        // 🏆 [關鍵新增]：每日奇遇任務達成！
+        // 只要這行被執行，今天主畫面的驚喜寶可夢就不會再出現了
+        if (s.dailyWild) {
+            s.dailyWild.claimed = true;
+        }
+        
         // ● 功能 12: 給予經驗值與動態提示
         if (typeof gainExp === 'function') gainExp(10);
 
@@ -1746,37 +2196,136 @@ function renderBag() {
     bs.innerHTML = `<option value="poke">精靈球 (${s.items.poke})</option><option value="great">超級球 (${s.items.great})</option><option value="ultra">高級球 (${s.items.ultra})</option><option value="master">大師球 (${s.items.master})</option>`;
 }
 
-let dexId = 25, dexShiny = false;
+
+// --- 🚩 全域狀態控制 ---
+let dexId = 1;        // 當前選中 ID
+let dexShiny = false; // 是否閃光
+let dexMega = "";     // Mega 型態: "", "x", "y"
+
+// 根據官方 493 前的資料預設的 Mega 名單 (可依你的需求增減)
+const MEGA_LIST = [3, 6, 9, 15, 18, 65, 80, 94, 115, 127, 130, 142, 150, 181, 208, 212, 214, 229, 248, 254, 257, 260, 282, 302, 303, 306, 308, 310, 319, 323, 334, 354, 359, 362, 373, 376, 380, 381, 382, 383, 384, 428, 445, 448, 460, 475];
+
+// --- 🎨 核心渲染函式 ---
 function renderDex() {
-    const nav = document.getElementById('dexNav');
-    nav.innerHTML = "";
-    for(let i=1; i<=493; i++) {
-        const item = document.createElement('div');
+    // 🚩 確保 ID 對應到新 HTML 結構中的左側欄
+    const nav = document.getElementById('dexNav') || document.querySelector('.dex-sidebar');
+    if (!nav) return;
+
+    let listHtml = "";
+    for (let i = 1; i <= 493; i++) {
         const caught = s.owned.includes(i);
-        item.className = `dex-item ${i === dexId ? 'active' : ''}`;
+        const nameText = caught ? (POKEMON_NAMES[i] || "???") : "???";
+        const activeClass = (i === dexId) ? "active" : "";
         
-        // [修正點 1] 已捕捉則顯示「編號 + 中文名」，未捕捉則顯示「???」
-        const nameText = caught ? getPkmnName(i) : "???";
-        item.innerText = `No.${String(i).padStart(3,'0')} ${nameText}`;
+        // 渲染列表項目
+        listHtml += `<div class="dex-item ${activeClass}" onclick="selectDex(${i})">
+            No.${String(i).padStart(3, '0')} ${nameText}
+        </div>`;
+    }
+    nav.innerHTML = listHtml;
+
+    // 🚩 修正：自動捲動到選中項（這在手機上非常重要，不然點了下面的精靈，列表會跳回最上面）
+    const activeItem = nav.querySelector('.dex-item.active');
+    if(activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    updateDexDetail();
+}
+
+// --- 🔍 選取寶可夢 ---
+function selectDex(id) {
+    dexId = id;
+    dexMega = ""; // 切換寶可夢時重置 Mega
+    renderDex();
+}
+
+// --- 🖼️ 更新右側詳細資訊 ---
+function updateDexDetail() {
+    const caught = s.owned.includes(dexId);
+    const detailName = caught ? (POKEMON_NAMES[dexId] || "???") : "???";
+    const shinyOwned = s.shinyOwned.includes(dexId);
+
+    // 1. 更新標題 (若 Mega 則顯示名字前綴)
+    let prefix = dexMega ? `Mega ${dexMega.toUpperCase()} ` : "";
+    document.getElementById('dexTitle').innerText = `No.${String(dexId).padStart(3, '0')} ${prefix}${detailName}`;
+
+    // 2. 圖片路徑邏輯 (修正後版本)
+    const imgEl = document.getElementById('dexImg');
+    if (!caught) {
+        // 未捕捉顯示 0 號圖 (或替換為問號圖)
+        imgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png`;
+    } else if (dexMega !== "") {
+        // --- 🧬 抓取你的 GitHub Mega 庫 ---
+        const folder = dexShiny ? 'shiny' : 'normal';
         
-        item.onclick = () => { dexId = i; renderDex(); };
-        nav.appendChild(item);
+        // 🚩 修正點：如果是 'mega' 則後綴為空字串，如果是 'x'/'y' 則保留後綴
+        let suffix = (dexMega === 'x' || dexMega === 'y') ? dexMega : "";
+        
+        // 🚩 修正點：這裡原本是 ${dexMega}，現在改為 ${suffix}
+        const url = `https://paulie0102-bear.github.io/Bear/img/mega/${folder}/${dexId}${suffix}.png`;
+        
+        console.log("正在嘗試讀取 Mega 圖片網址:", url); // 方便你按 F12 檢查網址是否正確
+        imgEl.src = url;
+
+        // 防破圖：如果 GitHub 沒這張圖，自動跳回 PokeAPI 普通版
+        imgEl.onerror = () => { 
+            console.error("Mega 圖片讀取失敗，跳回普通版。網址為:", url);
+            imgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dexShiny ? 'shiny/' : ''}${dexId}.png`; 
+            imgEl.onerror = null; 
+        };
+    } else {
+        // --- 🏠 抓標準 PokeAPI 普通/閃光圖 ---
+        imgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dexShiny ? 'shiny/' : ''}${dexId}.png`;
+        imgEl.onerror = null;
+    }
+
+    // 3. 按鈕權限控制
+    const shinyBtn = document.getElementById('shinyBtn');
+    shinyBtn.disabled = !shinyOwned;
+    shinyBtn.style.opacity = shinyOwned ? "1" : "0.3";
+
+    // 4. Mega 按鈕顯示判定
+    const hasMega = MEGA_LIST.includes(dexId) && caught;
+    const isDual = [6, 150].includes(dexId); // 噴火龍, 超夢
+    
+    document.getElementById('megaGroup').style.display = hasMega ? "grid" : "none";
+    document.getElementById('mBtnSingle').style.display = (hasMega && !isDual) ? "block" : "none";
+    document.getElementById('mBtnX').style.display = isDual ? "block" : "none";
+    document.getElementById('mBtnY').style.display = isDual ? "block" : "none";
+    document.getElementById('megaTag').style.display = hasMega ? "block" : "none";
+}
+
+// --- 🧬 切換 Mega 型態 ---
+function toggleMega(type) {
+    // 這裡可以加上檢查 s.items.mstone 是否足夠的邏輯
+    dexMega = (dexMega === type) ? "" : type; // 再次點擊則取消
+    updateDexDetail();
+}
+
+// --- ✨ 切換閃光 ---
+function setDexShiny(v) {
+    if (v && !s.shinyOwned.includes(dexId)) return;
+    dexShiny = v;
+    updateDexDetail();
+}
+
+// --- 🤝 就決定是你了！ ---
+function assignBuddy() {
+    if (!s.owned.includes(dexId)) { 
+        alert("尚未捕捉此寶可夢！"); 
+        return; 
     }
     
-    const caught = s.owned.includes(dexId);
+    // 儲存到存檔物件 s
+    s.buddyId = dexId; 
+    s.isShinyBuddy = dexShiny;
+    s.buddyMega = dexMega; // 🚩 新增儲存欄位，記得在 updateUI 使用它
     
-    // [修正點 2] 詳細面板標題同步中文名
-    const detailName = caught ? getPkmnName(dexId) : "???";
-    document.getElementById('dexTitle').innerText = `No.${String(dexId).padStart(3,'0')} ${detailName}`;
+    if (typeof saveGame === 'function') saveGame();
+    if (typeof updateUI === 'function') updateUI(); 
     
-    document.getElementById('dexImg').src = caught ? `${API}/pokemon/${dexShiny?'shiny/':''}${dexId}.png` : `${API}/pokemon/0.png`;
-    document.getElementById('shinyBtn').disabled = !s.shinyOwned.includes(dexId);
-}
-function setDexShiny(v) { dexShiny = v; renderDex(); }
-function assignBuddy() {
-    if(!s.owned.includes(dexId)) { alert("尚未捕捉此寶可夢！"); return; }
-    s.buddyId = dexId; s.isShinyBuddy = dexShiny;
-    updateUI(); alert("夥伴更換成功！");
+    alert(`更換夥伴：${POKEMON_NAMES[dexId]} ${dexMega ? '(' + dexMega.toUpperCase() + ')' : ''}`);
 }
 
 function buy(type, price) {
@@ -1907,6 +2456,7 @@ function renderCharts() {
 let tempData = []; // 暫存區
 let lastImportCount = 0; // 儲存上次匯入成功筆數
 
+// 注意：這裡不准放任何 <div> 標籤！
 function handleCSV(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1918,8 +2468,15 @@ function handleCSV(e) {
 
         tempData = [];
         const previewList = document.getElementById('previewList');
+        
+        // 安全檢查
+        if (!previewList) {
+            console.error("錯誤：找不到 id='previewList' 的元素，請將 <div id='previewList'></div> 放到 HTML 中。");
+            return; 
+        }
+
         previewList.innerHTML = "";
-        lastImportCount = 0; // 每次匯入前重置
+        lastImportCount = 0;
 
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
@@ -1955,40 +2512,37 @@ function handleCSV(e) {
                 tempData.push(item);
                 lastImportCount++;
 
-                // 顯示暫存區資料
                 previewList.innerHTML += `
-    <div class="csv-item-mobile">
-        <div class="csv-row">
-            <input type="date" value="${item.date}" 
-                   onchange="tempData[${tempData.length-1}].date=this.value" class="csv-date">
-            <select onchange="tempData[${tempData.length-1}].cat=this.value" class="csv-cat">
-                <option value="其他" ${item.cat==="其他"?"selected":""}>其他</option>
-                <option value="餐飲" ${item.cat==="餐飲"?"selected":""}>餐飲</option>
-                <option value="交通" ${item.cat==="交通"?"selected":""}>交通</option>
-                <option value="購物" ${item.cat==="購物"?"selected":""}>購物</option>
-                <option value="娛樂" ${item.cat==="娛樂"?"selected":""}>娛樂</option>
-                <option value="醫療" ${item.cat==="醫療"?"selected":""}>醫療</option>
-            </select>
-        </div>
-        <div class="csv-row">
-            <input type="text" value="${item.note}" 
-                   onchange="tempData[${tempData.length-1}].note=this.value" class="csv-note" placeholder="備註">
-            <span class="csv-amt">$${item.amt}</span>
-        </div>
-    </div>`;
+                    <div class="csv-item-mobile">
+                        <div class="csv-row">
+                            <input type="date" value="${item.date}" onchange="tempData[${tempData.length-1}].date=this.value" class="csv-date">
+                            <select onchange="tempData[${tempData.length-1}].cat=this.value" class="csv-cat">
+                                <option value="其他" ${item.cat==="其他"?"selected":""}>其他</option>
+                                <option value="餐飲" ${item.cat==="餐飲"?"selected":""}>餐飲</option>
+                                <option value="交通" ${item.cat==="交通"?"selected":""}>交通</option>
+                                <option value="購物" ${item.cat==="購物"?"selected":""}>購物</option>
+                                <option value="娛樂" ${item.cat==="娛樂"?"selected":""}>娛樂</option>
+                                <option value="醫療" ${item.cat==="醫療"?"selected":""}>醫療</option>
+                            </select>
+                        </div>
+                        <div class="csv-row">
+                            <input type="text" value="${item.note}" onchange="tempData[${tempData.length-1}].note=this.value" class="csv-note" placeholder="備註">
+                            <span class="csv-amt">$${item.amt}</span>
+                        </div>
+                    </div>`;
             }
         }
 
-        if(tempData.length>0){
+        if(tempData.length > 0){
             document.getElementById('csvPreviewArea').style.display = "block";
             document.getElementById('importCount').innerText = `預覽資料數量: ${lastImportCount}`;
         } else {
             document.getElementById('importCount').innerText = `預覽資料數量: 0`;
         }
-    };
+    }; // reader.onload 結束
 
     reader.readAsText(file);
-}
+} // handleCSV 函式結束 (🚩 這邊之前少了這個括號)
 
 function confirmImport() {
     if(!tempData || tempData.length===0){ cancelImport(); return; }
@@ -2114,8 +2668,74 @@ function delHist(id) {
     if(idx > -1) { const h = s.hist[idx]; s.yearSums[h.date.substring(0,7)] -= h.amt; s.catSums[h.cat] -= h.amt; s.hist.splice(idx, 1); updateUI(); searchHistory(); }
 }
 
-function exportData() { const blob = new Blob([JSON.stringify(s)], {type: "application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `pokemaster_save_${Date.now()}.json`; a.click(); }
-function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { s = JSON.parse(ev.target.result); updateUI(); alert("存檔讀取成功！"); }; reader.readAsText(e.target.files[0]); }
+function exportData() {
+    // 1. 取得現在時間 (例如: 20260311_1530)
+    const now = new Date();
+    const timeStr = now.getFullYear() + 
+                    (now.getMonth()+1).toString().padStart(2, '0') + 
+                    now.getDate().toString().padStart(2, '0') + "_" +
+                    now.getHours().toString().padStart(2, '0') + 
+                    now.getMinutes().toString().padStart(2, '0');
+
+    // 2. 轉換為 JSON 字串
+    const blob = new Blob([JSON.stringify(s)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    
+    // 3. 設定自訂副檔名 .pkms (方便手機查找)
+    a.download = `PM_Save_${timeStr}.pkms`; 
+    
+    // 4. 執行下載
+    document.body.appendChild(a); // 部分手機瀏覽器需要將元素加入 DOM 才能點擊
+    a.click();
+    
+    // 5. 清理與釋放記憶體
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href); 
+    }, 100);
+}
+
+function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 🚩 檢查副檔名 (非強制，但可提醒玩家)
+    if (!file.name.endsWith('.pkms') && !file.name.endsWith('.json')) {
+        if (!confirm("這看起來不是標準的存檔格式，是否仍要嘗試讀取？")) return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const loaded = JSON.parse(ev.target.result);
+            
+            // 🚩 [關鍵修改] 使用與 window.onload 一致的合併邏輯
+            // 這樣能保證「舊存檔」匯入「新遊戲」時，新功能變數（如 dailyWild）不會消失
+            s = { 
+                ...s,              // 先放目前新版本的預設結構
+                ...loaded,         // 用讀取的資料覆蓋
+                claimedGifts: (loaded.claimedGifts || s.claimedGifts || []) // 確保陣列欄位存在
+            };
+
+            // 🚩 匯入後立即存檔到 LocalStorage，確保手機關閉 APP 後資料還在
+            localStorage.setItem('pokemaster_v60', JSON.stringify(s));
+
+            // 更新 UI 顯示新資料
+            updateUI(); 
+            
+            alert("✅ 存檔匯入成功！");
+            
+            // 重設上傳按鈕，方便下次重複選取相同檔案
+            e.target.value = ""; 
+
+        } catch (err) {
+            console.error("Import Error:", err);
+            alert("❌ 讀取失敗：存檔內容損壞或格式不符");
+        }
+    };
+    reader.readAsText(file);
+}
 function lighten() { /* 簡化清理邏輯保留 */ const start = document.getElementById('lightStart').value; const end = document.getElementById('lightEnd').value; if(!start || !end) return; exportData(); s.hist = s.hist.filter(h => h.date < start || h.date > end); updateUI(); alert("清理完成並已匯出備份。"); }
 function resetAll() { if(confirm("🔥 確定重置？這會永久刪除所有紀錄與圖鑑！")) { localStorage.removeItem('pokemaster_v60'); location.reload(); } }
 </script>
@@ -2123,19 +2743,6 @@ function resetAll() { if(confirm("🔥 確定重置？這會永久刪除所有�
     // ==========================================
 // 1. 資料庫定義：博士與冠軍的贈禮名單
 // ==========================================
-const DOCTOR_DATA = {
-    'oak':   { name: '關都地區｜大木博士的啟程禮', ids: [1, 4, 7] },    // 妙蛙、小火、傑尼
-    'elm':   { name: '城都地區｜空木博士的啟程禮', ids: [152, 155, 158] }, // 菊草、火球、小鋸
-    'birch': { name: '豐緣地區｜小田卷博士的啟程禮', ids: [252, 255, 258] }, // 木守、火稚、水躍
-    'rowan': { name: '神奧地區｜山梨博士的啟程禮', ids: [387, 390, 393] }    // 嫩苗、小火、波加
-};
-
-const CHAMPION_DATA = {
-    'red':    { name: '關都地區｜赤紅的傳奇祝福', ids: [131, 143, 149] }, // 拉普拉斯、卡比獸、快龍
-    'lance':  { name: '城都地區｜阿渡的龍之覺醒', ids: [230, 248, 212] }, // 刺龍王、班基拉斯、巨鉗螳螂
-    'steven': { name: '豐緣地區｜大吾的鋼鐵意志', ids: [376, 373, 306] }, // 巨金怪、暴飛龍、波士可多拉
-    'cynthia':{ name: '神奧地區｜竹蘭的遺跡之魂', ids: [445, 448, 350] }  // 烈咬陸鯊、路卡利歐、美納斯
-};
 
 // ==========================================
 // 2. 核心邏輯：天數計算與存檔檢查
@@ -2167,15 +2774,12 @@ function updateGiftButtons() {
     const championKeys = Object.keys(CHAMPION_DATA);
     const doctorKeys = Object.keys(DOCTOR_DATA);
 
-    // 1. 定義冠軍代表寶可夢 ID (Ace)
     const aceMap = { 'red': 6, 'lance': 149, 'steven': 376, 'cynthia': 445 };
-    
-    // 2. 定義解鎖後的祝福語
     const championNames = {
-        'red': ' 關都地區｜赤紅的傳記祝福',
-        'lance': ' 城都地區｜阿渡的龍之覺醒',
-        'steven': ' 豐緣地區｜大吾的鋼鐵意志',
-        'cynthia': ' 神奧地區｜竹蘭的遺跡之魂'
+        'red': '關都地區｜赤紅的傳記祝福',
+        'lance': '城都地區｜阿渡的龍之覺醒',
+        'steven': '豐緣地區｜大吾的鋼鐵意志',
+        'cynthia': '神奧地區｜竹蘭的遺跡之魂'
     };
 
     [...doctorKeys, ...championKeys].forEach(key => {
@@ -2183,38 +2787,73 @@ function updateGiftButtons() {
         if (!btn) return;
 
         const isChamp = championKeys.includes(key);
-        const imgUrl = isChamp ? `${API}/pokemon/${aceMap[key]}.png` : "";
+        const hasClaimed = s.claimedGifts.includes(key);
 
-        if (s.claimedGifts.includes(key)) {
-            // ● A. 已領取狀態：變灰、顯示勳章灰階 (觸發虛線封印感)
-            btn.disabled = true;
-            if (isChamp) {
-                btn.innerHTML = `
-                    <div class="champion-medal" style="filter:grayscale(1); opacity:0.5;"><img src="${imgUrl}"></div>
-                    <div class="champion-text">✅ 已獲得祝福</div>
-                `;
-            } else {
-                btn.innerText = "✅ 已領取";
-            }
-        } else if (isChamp && days < 100) {
-            // ★ B. 關鍵修改：冠軍未解鎖
-            // 不去改 innerHTML，它就會顯示你在 HTML 寫的「來自...的認可」
-            // 只設定 disabled = true，讓它套用你的灰色虛線 CSS
-            btn.disabled = true; 
-        } else {
-            // ★ C. 已解鎖狀態
-            btn.disabled = false;
-            btn.style.opacity = "1";
+        // --- A. 博士按鈕邏輯 (適配白色卡片) ---
+        if (!isChamp) {
+            const docInfo = DOCTOR_DATA[key];
+            if (!docInfo) return;
             
-            if (isChamp && days >= 100) {
-                // ✨ 顯示金色勳章與祝福語
+            // 抓取梗圖，若無則抓取該區火系御三家作為備援
+            const iconId = docInfo.sceneIconId || docInfo.ids[1];
+            const sceneImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${iconId}.png`;
+            
+            btn.disabled = hasClaimed;
+            
+            // 調整：文字改為深藍灰色 #2c3e50，圖標底座改為淡灰色
+            btn.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; padding: 4px; opacity: ${hasClaimed ? '0.6' : '1'};">
+                    <div style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:rgba(0,0,0,0.05); border-radius:50%;">
+                        <img src="${sceneImg}" style="width:110%; height:auto; filter: ${hasClaimed ? 'grayscale(1) brightness(0.7)' : 'drop-shadow(0 0 3px rgba(0,0,0,0.2))'};">
+                    </div>
+                    <span style="font-weight:bold; font-size:14px; color:#2c3e50; text-align:left;">
+                        ${hasClaimed ? '✅ ' : ''}${docInfo.name}
+                    </span>
+                </div>
+            `;
+            
+            // 調整：未領取時使用主題藍色虛線，已領取變灰實線
+            btn.style.display = "block";
+            btn.style.width = "100%";
+            btn.style.marginBottom = "8px";
+            btn.style.borderRadius = "12px";
+            btn.style.transition = "all 0.3s";
+            btn.style.border = hasClaimed ? "1.5px solid #bdc3c7" : "1.5px dashed #3498db";
+            btn.style.background = hasClaimed ? "#f2f2f2" : "#ffffff";
+            btn.style.cursor = hasClaimed ? "default" : "pointer";
+
+        // --- B. 冠軍按鈕邏輯 (同步視覺風格) ---
+        } else {
+            const aceId = aceMap[key];
+            const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${aceId}.png`;
+            
+            if (hasClaimed) {
+                btn.disabled = true;
                 btn.innerHTML = `
-                    <div class="champion-medal"><img src="${imgUrl}"></div>
-                    <div class="champion-text">${championNames[key]}</div>
+                    <div style="display:flex; align-items:center; gap:12px; padding: 4px; opacity: 0.6;">
+                        <div style="width:40px; filter:grayscale(1) brightness(0.7);"><img src="${imgUrl}" style="width:100%"></div>
+                        <div style="font-weight:bold; font-size:14px; color:#95a5a6; text-align:left;">✅ 已獲得祝福</div>
+                    </div>
                 `;
+                btn.style.border = "1.5px solid #bdc3c7";
+                btn.style.background = "#f2f2f2";
+            } else if (days < 100) {
+                btn.disabled = true;
+                // 維持 CSS 原始定義的「封印」樣式 (灰色虛線)
             } else {
-                // 🎓 博士按鈕
-                btn.innerText = "博士的起程禮"; 
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:12px; padding: 4px;">
+                        <div style="width:40px; filter:drop-shadow(0 0 3px rgba(218,165,32,0.4));"><img src="${imgUrl}" style="width:100%"></div>
+                        <div style="font-weight:bold; font-size:14px; color:#d4af37; text-align:left;">${championNames[key]}</div>
+                    </div>
+                `;
+                btn.style.border = "1.5px solid #d4af37";
+                btn.style.background = "#fffdf0";
+                btn.style.display = "block";
+                btn.style.width = "100%";
+                btn.style.marginBottom = "8px";
+                btn.style.borderRadius = "12px";
             }
         }
     });
