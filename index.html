@@ -1178,43 +1178,47 @@ const CHAMPION_DATA = {
 };
 
 window.onload = () => {
-    // 1. 讀取存檔
+    // --- 1. 讀取並合併存檔 ---
     const saved = localStorage.getItem('pokemaster_v60');
     if(saved) {
         const loaded = JSON.parse(saved);
-        // 合併存檔資料 (確保深層物件如 tasks, dailyWild 也能被正確載入)
         s = { 
             ...s, 
             ...loaded, 
             claimedGifts: (loaded.claimedGifts || []),
-            tasks: loaded.tasks || s.tasks // 🚩 確保任務進度被載入
+            tasks: loaded.tasks || s.tasks 
         }; 
-    } else {
-        if (!s.claimedGifts) s.claimedGifts = [];
     }
 
-    // 2. 初始化野怪與任務結構 (防止遺漏)
+    // --- 2. 初始化物件結構 (防止 undefined) ---
+    if (!s.claimedGifts) s.claimedGifts = [];
     s.dailyWild = s.dailyWild || { claimed: false, lastDate: "" };
     s.tasks = s.tasks || { dailyDate: "", weeklyDate: "", dRec: 0, dCatch: 0, wRec: 0, wCatch: 0, claimed: [] };
 
-    // 🚩 3. [核心新增]：載入資料後，立即檢查是否需要換日重置
-    // 這個順序非常重要，一定要在 updateUI 之前！
+    // --- 3. 執行重置檢查 (換日/換週) ---
     checkTaskReset(); 
 
-    // 4. 設定時間選擇器預設值
-    document.getElementById('recDate').valueAsDate = new Date();
-    document.getElementById('chartMonthPicker').value = new Date().toISOString().substring(0, 7);
+    // --- 4. 設定 UI 預設值 (日期、月份) ---
+    const now = new Date();
+    document.getElementById('recDate').valueAsDate = now;
+    const monthStr = now.toISOString().substring(0, 7);
+    const monthPicker = document.getElementById('chartMonthPicker');
+    if (monthPicker) monthPicker.value = monthStr;
     
-    // 5. 更新 UI 狀態
-    updateGiftButtons(); // 掃描存檔，鎖定已領取或未解鎖的禮物
+    // --- 5. 啟動各項 UI 更新功能 ---
     updateUI();          // 渲染主畫面數據
+    updateGiftButtons(); // 鎖定領取的禮物或檢查冠軍資格
+    initCarrier();       // 🚩 初始化載具條碼 (從你第二個 onload 移過來的)
     
-    // 6. 檢查今日野怪是否出現
+    // --- 6. 啟動野怪偵測 ---
     if (typeof renderDailyWild === "function") {
         renderDailyWild();
     }
 
+    // --- 7. 定時器 ---
     setInterval(tickMega, 1000);
+    
+    console.log("%c🚀 系統初始化完成", "color: #2ecc71; font-weight: bold;");
 };
 
 function checkTaskReset() {
@@ -1435,30 +1439,7 @@ window.onChampionBtnClick = function(key) {
 };
 
 
-// 1. 修改 window.onload，加入載具初始化
-window.onload = () => {
-    const saved = localStorage.getItem('pokemaster_v60');
-    if(saved) {
-        const loaded = JSON.parse(saved);
-        s = { ...s, ...loaded }; 
-    }
-    document.getElementById('recDate').valueAsDate = new Date();
-    document.getElementById('chartMonthPicker').value = new Date().toISOString().substring(0, 7);
-    
-    updateUI();
-    initCarrier(); // <-- 這裡新增：初始化載具條碼
-    setInterval(tickMega, 1000);
-};
-
-// 2. 在 updateUI 附近加入這三個載具專用函式
-function initCarrier() {
-    const savedCarrier = localStorage.getItem('user_carrier');
-    if (savedCarrier) {
-        document.getElementById('carrierInput').value = savedCarrier;
-        renderBarcode(savedCarrier);
-    }
-}
-
+// 1. 修改 window.onload，加入載具初始
 function saveCarrier() {
     let code = document.getElementById('carrierInput').value.trim().toUpperCase();
     
