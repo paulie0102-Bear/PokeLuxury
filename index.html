@@ -1218,32 +1218,7 @@ window.onload = () => {
 };
 
 function checkTaskReset() {
-    // 🚩 [安全性檢查]：確保 s.tasks 結構存在，避免讀取不到屬性而報錯
-    if (!s.tasks) {
-        s.tasks = { 
-            dailyDate: "", weeklyDate: "", 
-            dRec: 0, dCatch: 0, 
-            wRec: 0, wCatch: 0, 
-            claimed: [] 
-        };
-    }
-
-    const now = new Date();
-    const today = now.toDateString();
-    
-    // 🚩 [關鍵修正]：建立一個 tempDate 副本來計算週一，不要動到原本的 now
-    const tempDate = new Date(now.getTime()); 
-    const day = tempDate.getDay(); 
-    const diff = tempDate.getDate() - day + (day === 0 ? -6 : 1);
-    tempDate.setDate(diff);
-    const mondayDate = tempDate.toDateString();
-
-    let hasChanged = false;
-
-    // 1. 每日重置判定
-    // 比較「存檔日期」與「今天」是否不同
-    function checkTaskReset() {
-    // 🚩 [安全性檢查]
+    // 1. 安全性檢查：確保 s.tasks 結構存在
     if (!s.tasks) {
         s.tasks = { dailyDate: "", weeklyDate: "", dRec: 0, dCatch: 0, wRec: 0, wCatch: 0, claimed: [] };
     }
@@ -1251,7 +1226,7 @@ function checkTaskReset() {
     const now = new Date();
     const today = now.toDateString();
     
-    // 計算週一
+    // 2. 計算週一標記
     const tempDate = new Date(now.getTime()); 
     const day = tempDate.getDay(); 
     const diff = tempDate.getDate() - day + (day === 0 ? -6 : 1);
@@ -1260,12 +1235,9 @@ function checkTaskReset() {
 
     let hasChanged = false;
 
-    // 1. 每日重置判定
+    // 3. 每日重置判定
     if (s.tasks.dailyDate !== today) {
-        // --- 🚩 每日重置 CONSOLE ---
         console.log(`%c📅 每日重置成功 | ${today}`, "color: white; background: #2ecc71; padding: 2px 5px; border-radius: 3px; font-weight: bold;");
-        console.log(`[系統紀錄]：舊日期 ${s.tasks.dailyDate || '無'} -> 新日期 ${today}`);
-        
         s.tasks.dailyDate = today;
         s.tasks.dRec = 0;   
         s.tasks.dCatch = 0; 
@@ -1273,12 +1245,9 @@ function checkTaskReset() {
         hasChanged = true;
     }
 
-    // 2. 每週重置判定 (每週一重置)
+    // 4. 每週重置判定
     if (s.tasks.weeklyDate !== mondayDate) {
-        // --- 🚩 每週重置 CONSOLE ---
         console.log(`%c🗓️ 每週重置成功 | 週一標記: ${mondayDate}`, "color: white; background: #3498db; padding: 2px 5px; border-radius: 3px; font-weight: bold;");
-        console.log(`[系統紀錄]：本週任務進度已歸零並清除已領取清單。`);
-
         s.tasks.weeklyDate = mondayDate;
         s.tasks.wRec = 0;   
         s.tasks.wCatch = 0; 
@@ -1286,14 +1255,15 @@ function checkTaskReset() {
         hasChanged = true;
     }
 
-    // 如果有變動，立即存檔並更新 UI
+    // 5. 冠軍資格檢查 (偵錯用)
+    const currentAge = (typeof getAccountAge === 'function') ? getAccountAge() : 0;
+    console.log(`%c🏆 任務資格檢查`, "color: #b8860b; font-weight: bold;");
+    console.log(`[帳號天數]：${currentAge} / 100 天`);
+
+    // 6. 存檔與 UI 更新
     if (hasChanged) {
         localStorage.setItem('pokemaster_v60', JSON.stringify(s));
-        
-        // 🚩 [建議]：如果有渲染任務的函式，要在這裡重新呼叫
-        if (typeof renderTasks === "function") {
-            renderTasks();
-        }
+        if (typeof renderTasks === "function") renderTasks();
     }
 }
 
