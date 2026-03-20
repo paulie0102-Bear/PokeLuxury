@@ -267,9 +267,86 @@
 <style>
     /* --- 看今朝專用 CSS --- */
     .writing-container {
-        padding: 25px; flex: 1; display: flex; flex-direction: column;
-        transition: background 1.5s ease; /* 抒情燈切換效果 */
-    }
+    padding: 25px; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column;
+    transition: background 1.5s ease;
+    position: relative; /* 關鍵：讓內部的浮水印和印章能絕對定位 */
+    overflow: hidden;   /* 避免動畫時印章超出範圍 */
+}
+
+/* 寄語浮水印 */
+#watermark-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    text-align: center;
+    font-family: "STKaiti", "KaiTi", serif;
+    font-size: 1.4rem;
+    line-height: 1.8;
+    color: var(--ink-color);
+    opacity: 0.12; /* 依照你的需求調高透明度，確保清晰可見 */
+    pointer-events: none; /* 讓滑鼠穿透，不影響點擊輸入框 */
+    white-space: pre-line; /* 支援換行 */
+    z-index: 0;
+}
+
+.time-seal {
+    position: absolute;
+    /* 動畫起點：左下角位移 (-150%, 150%)，旋轉 -20度 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-150%, 150%) scale(4) rotate(-20deg); 
+    
+    /* --- 橫向長方形強制設定 --- */
+    width: 240px !important; 
+    height: 110px !important; 
+    border: 4px solid #8b1e1e;
+    box-sizing: border-box; /* 確保邊框不撐開寬度 */
+    
+    /* 強制垂直分兩列 */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: center;
+    
+    /* 文字樣式 */
+    color: #8b1e1e;
+    font-family: "STKaiti", "KaiTi", serif; 
+    font-weight: bold;
+    font-size: 26px; 
+    line-height: 1.4; /* 拉開兩列的間距 */
+    letter-spacing: 10px; /* 橫向字距 */
+    
+    /* 初始狀態 */
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    mix-blend-mode: multiply;
+    filter: blur(0.3px);
+    transition: all 0.15s ease-out; 
+}
+
+/* 確保每一行字都是橫向排列 */
+.seal-line {
+    white-space: nowrap;
+    writing-mode: horizontal-tb !important; /* 強制橫書 */
+    padding-left: 10px; /* 補償字距造成的視覺偏移 */
+}
+
+/* 蓋章起動動畫 */
+.seal-active {
+    animation: stampEffect 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes stampEffect {
+    0% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+    70% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+}
 
     /* 抒情燈狀態 */
     .lyric-lamp {
@@ -364,12 +441,12 @@
             <div class="node-label">憶．往昔</div>
         </div>
 
-        <div class="node node-present" onclick="playAnim(this, 'present-modal', 'flip-action')">
-            <div class="icon-render">
-                <i class="ti ti-calendar-event"></i>
-            </div>
-            <div class="node-label">看．今朝</div>
-        </div>
+        <div class="node node-present" onclick="showWatermark(); playAnim(this, 'present-modal', 'flip-action')">
+    <div class="icon-render">
+        <i class="ti ti-calendar-event"></i>
+    </div>
+    <div class="node-label">看．今朝</div>
+</div>
 
         <div class="node node-future" onclick="playAnim(this, 'future-modal', 'pop-action')">
             <div class="icon-render">
@@ -395,7 +472,7 @@
         <div style="flex:1; text-align:center; font-weight:bold; font-size: 1.2rem;">墨跡記述</div>
     </div>
     
-    <div id="writing-area" class="writing-container" style="padding:25px; flex: 1; display: flex; flex-direction: column;">
+    <div class="modal-body" style="padding:25px; flex: 1; display: flex; flex-direction: column;">
         <div class="mood-selector" style="display: flex; justify-content: space-around; margin-bottom: 15px;">
             <span class="mood-item" onclick="selectMood('喜', this)">😊 喜</span>
             <span class="mood-item" onclick="selectMood('平', this)">😐 平</span>
@@ -403,17 +480,28 @@
             <span class="mood-item" onclick="selectMood('憤', this)">💢 憤</span>
         </div>
 
-        <textarea id="diaryBox" 
-                  oninput="checkMoodContext(this.value)"
-                  placeholder="此刻心境，化作筆墨..."
-                  style="width:100%; flex: 1; background: rgba(255,255,255,0.3); border: 1px solid #999; border-radius:12px; padding:20px; font-size:18px; line-height:1.8; font-family: KaiTi, serif; outline: none; resize: none;"></textarea>
+        <div class="writing-canvas" style="position: relative; flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.3); border: 1px solid #999; border-radius:12px; overflow: hidden;">
+            
+            <div id="watermark-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; text-align: center; font-family: 'STKaiti', 'KaiTi', serif; font-size: 22px; color: #333; opacity: 0.12; pointer-events: none; user-select: none; z-index: 1; white-space: pre-line; letter-spacing: 2px;"></div>
+
+            <textarea id="diaryBox" 
+                      oninput="checkMoodContext(this.value)"
+                      placeholder="此刻心境，化作筆墨..."
+                      style="width:100%; flex: 1; background: transparent; border: none; padding:20px; font-size:18px; line-height:1.8; font-family: 'KaiTi', serif; outline: none; resize: none; position: relative; z-index: 2;"></textarea>
+
+            <div id="time-seal" class="time-seal">
+    <div class="seal-line">今日種種</div>
+    <div class="seal-line">已入長河</div>
+</div>
+            
+        </div>
 
         <div class="tag-input-area" style="margin: 15px 0;">
             <input type="text" id="tagInput" placeholder="# 添加標籤 (如: #旅行)" 
                    style="width:100%; background: transparent; border: none; border-bottom: 1px solid #999; padding: 5px; font-family: inherit;">
         </div>
 
-        <button class="save-btn" onclick="saveDiary()" 
+        <button id="save-btn" class="save-btn" onclick="saveDiaryWithCeremony()" 
                 style="width:100%; padding:18px; background:var(--ink-color); color:white; border:none; border-radius:12px; font-size:18px; letter-spacing: 2px; cursor: pointer;">
             封存心情
         </button>
@@ -591,27 +679,117 @@ for (let d = 1; d <= daysInMonth; d++) {
     }
 }
 
+const quotes = [
+    "道不虛行只在人",
+    "夜深燼落螢入幃",
+    "笑看嫣紅染半山，逐風萬里白雲間，\n逍遙此身不為客，天地三才任平凡",
+    "吹滅讀書燈，滿身都是月",
+    "行到水窮處，坐看雲起時",
+    "萬物靜觀皆自得，四時佳興與人同",
+    "春有百花秋有月，夏有涼風冬有雪",
+    "且將新火試新茶，詩酒趁年華"
+];
+
+// 打開「看今朝」時隨機換台詞
+function showWatermark() {
+    const watermarkEl = document.getElementById('watermark-text'); // 確保與 HTML 的 ID 一致
+    if (watermarkEl) {
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        watermarkEl.innerText = randomQuote;
+        watermarkEl.style.opacity = "0.12"; // 確保初始狀態是淡淡的
+    }
+}
+
+// 封存心情的儀式
+function saveDiaryWithCeremony() {
+    const seal = document.getElementById('time-seal');
+    const msg = document.getElementById('seal-msg'); // 抓取感性文字標籤
+    const diaryBox = document.getElementById('diaryBox');
+    const text = diaryBox ? diaryBox.value : "";
     
-function selectMood(mood, el) {
-        selectedMood = mood;
-        document.querySelectorAll('.mood-item').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
+    // 1. 檢查內容
+    if (!text.trim()) {
+        alert("請留下一絲墨跡...");
+        return;
     }
 
-    // 感應負面字眼與時間
-    function checkMoodContext(text) {
-        const container = document.getElementById('writing-area');
-        const negativeWords = ['累', '難過', '傷心', '憂鬱', '痛', '失敗', '想哭', '煩'];
-        const isNegative = negativeWords.some(word => text.includes(word));
-        const hour = new Date().getHours();
-        const isMidnight = (hour >= 23 || hour <= 5);
+    // 2. 啟動印章動畫
+    if (seal) {
+    // 1. 設定初始狀態：在正中心、巨大、傾斜、透明
+    seal.style.transition = "none";
+    seal.style.opacity = "0";
+    // translate(-50%, -50%) 鎖定中心點，不產生橫向位移
+    // rotate(-8deg) 讓印章本身看起來是斜的
+    seal.style.transform = "translate(-50%, -50%) scale(4) rotate(-8deg)";
+    seal.offsetHeight; // 強制重繪
 
-        if (isNegative || isMidnight) {
-            container.classList.add('lyric-lamp');
-        } else {
-            container.classList.remove('lyric-lamp');
+    // 2. 啟動「垂直落下」動畫
+    // cubic-bezier 增加落下的衝擊速度感
+    seal.style.transition = "all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    seal.style.opacity = "1"; 
+    
+    // 3. 最終狀態：位置不變，縮小到原尺寸，但「依然保持傾斜」
+    // 注意：這裡不把 rotate 歸零，這樣印章蓋完就是斜的
+    seal.style.transform = "translate(-50%, -50%) scale(1) rotate(-8deg)";
+}
+
+// 4. 重置邏輯（也要同步保持傾斜，防止閃爍）
+setTimeout(() => {
+    saveDiary(); 
+    setTimeout(() => {
+        if (seal) {
+            seal.style.opacity = "0";
+            seal.style.transform = "translate(-50%, -50%) scale(4) rotate(-8deg)";
         }
+    }, 500);
+}, 1800);
+}
+
+
+function selectMood(mood, el) {
+    // 1. 更新全域變數
+    selectedMood = mood;
+    
+    // 2. 移除所有情緒選項的選取狀態 (假設你的 class 叫 selected)
+    document.querySelectorAll('.mood-item').forEach(item => {
+        item.classList.remove('selected');
+        item.style.backgroundColor = "transparent"; // 重置背景
+        item.style.transform = "scale(1)";         // 重置大小
+    });
+    
+    // 3. 為當前點擊的選項加上選取效果
+    el.classList.add('selected');
+    el.style.backgroundColor = "rgba(0, 0, 0, 0.05)"; // 淡淡的選取感
+    el.style.borderRadius = "8px";
+    el.style.transform = "scale(1.2)";              // 稍微放大表示選中
+    
+    console.log("當前選擇心情：", selectedMood);
+}
+    
+// 感應負面字眼與時間
+function checkMoodContext(text) {
+    // 改為抓取 diaryBox 的父元素，這樣就不會因為改了 ID 而失效
+    const diaryBox = document.getElementById('diaryBox');
+    if (!diaryBox) return; // 防呆
+    
+    const container = diaryBox.parentElement; 
+    const negativeWords = ['累', '難過', '傷心', '憂鬱', '痛', '失敗', '想哭', '煩'];
+    const isNegative = negativeWords.some(word => text.includes(word));
+    const hour = new Date().getHours();
+    const isMidnight = (hour >= 23 || hour <= 5);
+
+    // 只有在抓得到容器時才執行 classList 操作
+    if (container) {
+        if (isNegative || isMidnight) {
+    container.classList.add('lyric-lamp');
+    // 讓浮水印再稍微明顯一點點，像是在安撫你
+    document.getElementById('watermark-text').style.opacity = "0.2"; 
+} else {
+    container.classList.remove('lyric-lamp');
+    document.getElementById('watermark-text').style.opacity = "0.12";
+}
     }
+}
 
 // 切換頁籤
     function toggleFutureView(view) {
@@ -762,8 +940,7 @@ function saveDiary() {
     try {
         // 儲存至本地瀏覽器
         localStorage.setItem(key, JSON.stringify(diaryData));
-        alert("心情已封存於時光長河。");
-        
+                
         // 1. 關閉彈窗並清空欄位
         closeModal('present-modal');
         textEl.value = "";
