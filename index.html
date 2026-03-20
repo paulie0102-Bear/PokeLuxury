@@ -998,44 +998,36 @@ if (!window.playAnimWrapped) {
 
         
 
-        async function exportData() {
+function exportData() {
     // 1. 取得資料
     const data = JSON.stringify(localStorage, null, 2);
     
-    // 2. 讓使用者決定檔名
+    // 2. 獲取檔名（建議從網頁上的 input 獲取，這裡暫用 prompt，但加了安全延遲）
     let customName = prompt("請輸入備份檔名：", `diary_backup_${new Date().toISOString().slice(0, 10)}`);
     
-    // 如果使用者按取消或沒輸入，就停止執行
     if (customName === null) return; 
     if (!customName.trim()) customName = "diary_backup";
-
-    // 確保副檔名正確
     const fileName = customName.endsWith('.json') ? customName : `${customName}.json`;
+
     const blob = new Blob([data], { type: 'application/json' });
-
-    // 3. 嘗試 Android APK 原生分享
-    if (navigator.canShare && navigator.share) {
-        try {
-            const file = new File([blob], fileName, { type: 'application/json' });
-            await navigator.share({
-                title: '日記數據備份',
-                files: [file]
-            });
-            return; 
-        } catch (error) {
-            console.log('分享取消或失敗，轉向下載流程');
-        }
-    }
-
-    // 4. 回退方案：瀏覽器下載
     const url = URL.createObjectURL(blob);
+
+    // 3. 建立隱藏的下載鏈接
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName; // 這裡會套用使用者輸入的檔名
+    a.download = fileName;
+    
+    // 必須將其加入 DOM，Android WebView 才能識別點擊
     document.body.appendChild(a);
+    
+    // 執行點擊
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    // 4. 清理環境
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 1000);
 }
 
         // 讀取 JSON 檔案並覆蓋
