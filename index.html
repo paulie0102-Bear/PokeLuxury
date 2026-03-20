@@ -232,7 +232,93 @@
     .diary-entry { animation: fadeIn 0.5s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
+<style>
+    /* --- 看今朝專用 CSS --- */
+    .writing-container {
+        padding: 25px; flex: 1; display: flex; flex-direction: column;
+        transition: background 1.5s ease; /* 抒情燈切換效果 */
+    }
+
+    /* 抒情燈狀態 */
+    .lyric-lamp {
+        background: radial-gradient(circle, rgba(255,165,0,0.15) 0%, rgba(244,240,230,0) 80%) !important;
+        box-shadow: inset 0 0 100px rgba(255,140,0,0.1);
+    }
+
+    .mood-selector {
+        display: flex; justify-content: space-around; margin-bottom: 15px;
+    }
+    .mood-item {
+        padding: 5px 12px; border: 1px solid #ccc; border-radius: 15px;
+        cursor: pointer; font-size: 14px; transition: 0.3s;
+    }
+    .mood-item.selected {
+        background: var(--seal-red); color: white; border-color: var(--seal-red);
+    }
+
+    #diaryBox {
+        width: 100%; flex: 1; background: transparent; border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px; padding: 20px; font-size: 18px; line-height: 1.8;
+        outline: none; resize: none;
+    }
+
+    .tag-input-area { margin: 15px 0; }
+    #tagInput {
+        width: 100%; background: transparent; border: none;
+        border-bottom: 1px solid #999; padding: 5px; font-family: inherit;
+    }
+
+    .save-btn {
+        width: 100%; padding: 18px; background: var(--ink-color);
+        color: white; border: none; border-radius: 12px; font-size: 18px;
+    }
+
+    /* 季節粒子動畫 */
+    .particle {
+        position: absolute; pointer-events: none;
+        animation: fall linear infinite;
+    }
+    @keyframes fall {
+        0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+    }
+</style>
+    <style>
+    /* --- 寄明月專用 CSS --- */
+    .future-container { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    .future-tabs { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+    .future-tabs button {
+        background: none; border: 1px solid var(--ink-color); padding: 5px 20px;
+        border-radius: 20px; font-family: inherit; cursor: pointer;
+    }
+    .future-tabs button.active { background: var(--ink-color); color: white; }
+
+    #futureText {
+        width: 100%; height: 250px; background: rgba(255,255,255,0.3);
+        border: 1px solid #999; border-radius: 12px; padding: 20px;
+        font-size: 18px; line-height: 1.8; font-family: KaiTi, serif;
+    }
+
+    .lock-setting { margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .lock-setting input { border: 1px solid #999; border-radius: 5px; padding: 5px; background: transparent; }
+
+    /* 瓶中信列表 */
+    .bottle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .bottle-item {
+        text-align: center; cursor: pointer; position: relative;
+        padding: 10px; border: 1px dashed rgba(0,0,0,0.1); border-radius: 8px;
+    }
+    .bottle-item i { font-size: 40px; color: var(--ink-color); }
+    .bottle-item span { display: block; font-size: 12px; margin-top: 5px; color: #666; }
     
+    /* 鎖定遮罩 */
+    .locked-overlay {
+        filter: grayscale(1) blur(2px);
+        opacity: 0.6;
+    }
+</style>
 </head>
 <body>
 
@@ -265,42 +351,96 @@
         <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
     </div>
 
-    <div id="present-modal" class="modal">
-        <div class="modal-header">
-            <button class="back-btn" onclick="closeModal('present-modal')">〈 歸去</button>
-            <div style="flex:1; text-align:center; font-weight:bold; font-size: 1.2rem;">墨跡記述</div>
-        </div>
-        <div style="padding:25px; flex: 1; display: flex; flex-direction: column;">
-            <textarea id="diaryBox" style="width:100%; flex: 1; background: rgba(255,255,255,0.3); border: 1px solid #999; border-radius:12px; padding:20px; font-size:18px; line-height:1.8; font-family: KaiTi, serif; outline: none;" placeholder="此刻心境，化作筆墨..."></textarea>
-            <button onclick="saveDiary()" style="width:100%; margin: 25px 0; padding:18px; background:var(--ink-color); color:white; border:none; border-radius:12px; font-size:18px; letter-spacing: 2px;">封存心情</button>
-        </div>
+    <div id="season-particles" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99;"></div>
+
+<div id="present-modal" class="modal">
+    <div class="modal-header">
+        <button class="back-btn" onclick="closeModal('present-modal')">〈 歸去</button>
+        <div style="flex:1; text-align:center; font-weight:bold; font-size: 1.2rem;">墨跡記述</div>
     </div>
     
-    <div id="past-modal" class="modal">
+    <div id="writing-area" class="writing-container" style="padding:25px; flex: 1; display: flex; flex-direction: column;">
+        <div class="mood-selector" style="display: flex; justify-content: space-around; margin-bottom: 15px;">
+            <span class="mood-item" onclick="selectMood('喜', this)">😊 喜</span>
+            <span class="mood-item" onclick="selectMood('平', this)">😐 平</span>
+            <span class="mood-item" onclick="selectMood('憂', this)">😔 憂</span>
+            <span class="mood-item" onclick="selectMood('憤', this)">💢 憤</span>
+        </div>
+
+        <textarea id="diaryBox" 
+                  oninput="checkMoodContext(this.value)"
+                  placeholder="此刻心境，化作筆墨..."
+                  style="width:100%; flex: 1; background: rgba(255,255,255,0.3); border: 1px solid #999; border-radius:12px; padding:20px; font-size:18px; line-height:1.8; font-family: KaiTi, serif; outline: none; resize: none;"></textarea>
+
+        <div class="tag-input-area" style="margin: 15px 0;">
+            <input type="text" id="tagInput" placeholder="# 添加標籤 (如: #旅行)" 
+                   style="width:100%; background: transparent; border: none; border-bottom: 1px solid #999; padding: 5px; font-family: inherit;">
+        </div>
+
+        <button class="save-btn" onclick="saveDiary()" 
+                style="width:100%; padding:18px; background:var(--ink-color); color:white; border:none; border-radius:12px; font-size:18px; letter-spacing: 2px; cursor: pointer;">
+            封存心情
+        </button>
+    </div>
+</div>
+
+<div id="past-modal" class="modal">
     <div class="modal-header">
         <button class="back-btn" onclick="closeModal('past-modal')">〈 歸去</button>
         <div id="calendar-title" style="flex:1; text-align:center; font-weight:bold; font-size: 1.2rem;">二零二六．三月</div>
     </div>
-    <div class="calendar-container">
-        <div class="calendar-nav">
+    <div class="calendar-container" style="padding: 10px 20px;">
+        <div class="calendar-nav" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
             <button onclick="changeMonth(-1)">〈 前月</button>
             <button onclick="changeMonth(1)">後月 〉</button>
         </div>
-        <div class="calendar-weekdays">
+        <div class="calendar-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 10px; color: var(--seal-red);">
             <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
         </div>
-        <div id="calendar-days" class="calendar-days"></div>
+        <div id="calendar-days" class="calendar-days" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;"></div>
     </div>
-    <div id="day-detail" class="day-detail">
-        <div class="detail-hint">點擊日期，翻閱往昔墨跡</div>
+    <div id="day-detail" class="day-detail" style="margin: 20px; padding: 20px; flex: 1; border: 1px dashed var(--ink-color); border-radius: 12px; background: rgba(255,255,255,0.4); overflow-y: auto;">
+        <div class="detail-hint" style="color: #888; text-align: center; margin-top: 50px;">點擊日期，翻閱往昔墨跡</div>
     </div>
 </div>
-    <div id="future-modal" class="modal"><div class="modal-header"><button class="back-btn" onclick="closeModal('future-modal')">〈 歸去</button></div><div style="padding:20px;"><h2>未來信件...</h2></div></div>
 
+<div id="future-modal" class="modal">
+    <div class="modal-header">
+        <button class="back-btn" onclick="closeModal('future-modal')">〈 歸去</button>
+        <div style="flex:1; text-align:center; font-weight:bold; font-size: 1.2rem;">寄．明月</div>
+    </div>
+    
+    <div class="future-container" style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
+        <div class="future-tabs" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
+            <button onclick="toggleFutureView('write')" id="tab-write" class="active">投遞</button>
+            <button onclick="toggleFutureView('list')" id="tab-list">漂流</button>
+        </div>
+
+        <div id="future-write-area" class="future-section">
+            <textarea id="futureText" placeholder="給未來的自己一席話..." 
+                      style="width: 100%; height: 250px; background: rgba(255,255,255,0.3); border: 1px solid #999; border-radius: 12px; padding: 20px; font-size: 18px; line-height: 1.8; font-family: KaiTi, serif; resize: none; outline: none;"></textarea>
+            <div class="lock-setting" style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span>啟封之日：</span>
+                <input type="date" id="unlockDate" style="border: 1px solid #999; border-radius: 5px; padding: 5px; background: transparent; font-family: inherit;">
+            </div>
+            <button class="save-btn" onclick="saveFutureLetter()" 
+                    style="width: 100%; padding: 18px; background: var(--ink-color); color: white; border: none; border-radius: 12px; font-size: 18px; cursor: pointer;">
+                拋入長河
+            </button>
+        </div>
+
+        <div id="future-list-area" class="future-section" style="display:none;">
+            <div id="bottle-list" class="bottle-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                </div>
+        </div>
+    </div>
+</div>
+    
     <script>
 
 let currentViewDate = new Date();
-
+let selectedMood = "平";
+        
     // 擴充：初始化日曆
     function initCalendar() {
         const year = currentViewDate.getFullYear();
@@ -395,7 +535,171 @@ let currentViewDate = new Date();
         }
     };
 
+function selectMood(mood, el) {
+        selectedMood = mood;
+        document.querySelectorAll('.mood-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+    }
 
+    // 感應負面字眼與時間
+    function checkMoodContext(text) {
+        const container = document.getElementById('writing-area');
+        const negativeWords = ['累', '難過', '傷心', '憂鬱', '痛', '失敗', '想哭', '煩'];
+        const isNegative = negativeWords.some(word => text.includes(word));
+        const hour = new Date().getHours();
+        const isMidnight = (hour >= 23 || hour <= 5);
+
+        if (isNegative || isMidnight) {
+            container.classList.add('lyric-lamp');
+        } else {
+            container.classList.remove('lyric-lamp');
+        }
+    }
+
+// 切換頁籤
+    function toggleFutureView(view) {
+        document.getElementById('future-write-area').style.display = (view === 'write' ? 'block' : 'none');
+        document.getElementById('future-list-area').style.display = (view === 'list' ? 'block' : 'none');
+        document.getElementById('tab-write').className = (view === 'write' ? 'active' : '');
+        document.getElementById('tab-list').className = (view === 'list' ? 'active' : '');
+        if(view === 'list') renderBottleList();
+    }
+
+    // 儲存未來信件
+    function saveFutureLetter() {
+        const text = document.getElementById('futureText').value;
+        const unlockDate = document.getElementById('unlockDate').value;
+
+        if(!text || !unlockDate) return alert("請填寫內容並選擇啟封日期。");
+        
+        const today = new Date().toISOString().split('T')[0];
+        if(unlockDate <= today) return alert("啟封日期必須是未來。");
+
+        const futureData = {
+            text: text,
+            unlockDate: unlockDate,
+            createDate: new Date().getTime(),
+            isFuture: true
+        };
+
+        localStorage.setItem(`ink_future_${new Date().getTime()}`, JSON.stringify(futureData));
+        alert("信件已裝瓶，漂向未來的彼岸。");
+        document.getElementById('futureText').value = "";
+        closeModal('future-modal');
+    }
+
+    // 渲染瓶子列表
+    function renderBottleList() {
+        const listContainer = document.getElementById('bottle-list');
+        listContainer.innerHTML = '';
+        const today = new Date().toISOString().split('T')[0];
+
+        Object.keys(localStorage).filter(k => k.startsWith('ink_future_')).forEach(key => {
+            const data = JSON.parse(localStorage.getItem(key));
+            const isLocked = data.unlockDate > today;
+            
+            const item = document.createElement('div');
+            item.className = `bottle-item ${isLocked ? 'locked-overlay' : ''}`;
+            item.onclick = () => openFutureLetter(data, isLocked);
+            
+            item.innerHTML = `
+                <i class="ti ti-bottle"></i>
+                <span>${data.unlockDate}</span>
+                ${isLocked ? '<div style="font-size:10px;">🔒 未屆</div>' : '<div style="font-size:10px; color:var(--seal-red);">🔓 可讀</div>'}
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    // 開啟未來信件
+    function openFutureLetter(data, isLocked) {
+        if(isLocked) {
+            alert(`時機未至。此信將在 ${data.unlockDate} 隨潮汐而來。`);
+            // 觸發抖動效果
+            const icon = document.querySelector('.node-future .icon-render');
+            icon.classList.add('pop-action');
+            setTimeout(() => icon.classList.remove('pop-action'), 800);
+            return;
+        }
+        
+        alert(`來自過去的訊息：\n\n${data.text}`);
+    }
+
+    
+        
+    // 季節粒子生成器
+    function initSeasonEffects() {
+    const container = document.getElementById('season-particles');
+    const month = new Date().getMonth() + 1;
+    let config = { char: '🌸', color: '#ffb7c5', shadow: 'none' }; 
+
+    if (month >= 3 && month <= 5) {
+        // 春：櫻花
+        config = { char: '🌸', color: '#ffb7c5', shadow: 'none' };
+    } 
+    else if (month >= 6 && month <= 8) {
+        // 夏：翠竹葉與螢火蟲微光 (改用綠色葉片與光點)
+        const isFirefly = Math.random() > 0.5;
+        config = isFirefly 
+            ? { char: '●', color: '#d4fc79', shadow: '0 0 10px #d4fc79' } // 螢火蟲
+            : { char: '🍃', color: '#2d5a27', shadow: 'none' };           // 竹葉
+    } 
+    else if (month >= 9 && month <= 11) {
+        // 秋：楓葉
+        config = { char: '🍁', color: '#d35400', shadow: 'none' };
+    } 
+    else {
+        // 冬：下雪
+        config = { char: '❄️', color: '#ffffff', shadow: '0 0 5px #fff' };
+    }
+
+    for (let i = 0; i < 20; i++) {
+        createParticle(container, config);
+    }
+}
+
+function createParticle(container, config) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.innerText = config.char;
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.fontSize = (config.char === '●' ? '6px' : (Math.random() * 10 + 12) + 'px');
+    p.style.animationDuration = (Math.random() * 5 + 7) + 's'; // 夏天稍微慢一點，比較悠閒
+    p.style.animationDelay = (Math.random() * 5) + 's';
+    p.style.color = config.color;
+    p.style.textShadow = config.shadow;
+    p.style.opacity = config.char === '●' ? '0.8' : '1';
+    container.appendChild(p);
+}
+
+    // 修改儲存邏輯，整合標籤與心情
+    function saveDiary() {
+        const text = document.getElementById('diaryBox').value;
+        const tag = document.getElementById('tagInput').value;
+        if(!text) return alert("請寫下您的心情");
+        
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        const diaryData = {
+            text: text,
+            tag: tag,
+            mood: selectedMood,
+            time: now.getTime()
+        };
+
+        localStorage.setItem(`ink_diary_${dateStr}_${now.getTime()}`, JSON.stringify(diaryData));
+        alert("心情已封存於時光長河。");
+        closeModal('present-modal');
+        
+        // 清空並重整日曆
+        document.getElementById('diaryBox').value = "";
+        document.getElementById('tagInput').value = "";
+        if(typeof initCalendar === 'function') initCalendar();
+    }
+
+    // 初始化季節
+    window.onload = initSeasonEffects;
 
         
         // 播放動畫後開啟彈窗
