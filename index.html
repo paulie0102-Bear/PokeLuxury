@@ -818,16 +818,7 @@ if (!window.playAnimWrapped) {
 
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        // 存檔至 LocalStorage
-        function saveDiary() {
-            const text = document.getElementById('diaryBox').value;
-            if(!text) return alert("請寫下您的心情");
-            const key = 'ink_diary_' + new Date().getTime();
-            localStorage.setItem(key, text);
-            alert("心情已封存於時光長河。");
-            closeModal('present-modal');
-            document.getElementById('diaryBox').value = ""; // 清空
-        }
+        
 
         // 匯出 JSON 檔案
         function exportData() {
