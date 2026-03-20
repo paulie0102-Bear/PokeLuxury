@@ -369,10 +369,12 @@
     </div>
 
     <div class="footer-bar">
-        <button class="footer-btn" onclick="exportData()">📤 匯出存檔</button>
-        <button class="footer-btn" onclick="document.getElementById('fileInput').click()">📥 讀取存檔</button>
-        <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
-    </div>
+    <button class="footer-btn" onclick="exportData()">📤 匯出存檔</button>
+    <span id="storage-usage" style="font-size: 12px; color: var(--ink-color); opacity: 0.6; align-self: center; font-family: monospace;">水位: 0%</span>
+    
+    <button class="footer-btn" onclick="document.getElementById('fileInput').click()">📥 讀取存檔</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
+</div>
 
     <div id="season-particles" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99;"></div>
 
@@ -578,47 +580,7 @@ for (let d = 1; d <= daysInMonth; d++) {
     }
 }
 
-    // 修改原本的 saveDiary，加上日期標籤以便搜尋
-    const originalSaveDiary = saveDiary;
-    saveDiary = function() {
-    const text = document.getElementById('diaryBox').value;
-    const tag = document.getElementById('tagInput').value; // 取得標籤
-    if(!text) return alert("請寫下您的心情");
-
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
-    // 將資料打包成物件
-    const diaryData = {
-        text: text,
-        tag: tag,
-        mood: typeof selectedMood !== 'undefined' ? selectedMood : '平', // 抓取選擇的心情
-        time: now.getTime()
-    };
-
-    const key = `ink_diary_${dateStr}_${now.getTime()}`;
-    
-    // 儲存時轉為 JSON 字串
-    localStorage.setItem(key, JSON.stringify(diaryData));
-    
-    alert("心情已封存於時光長河。");
-    closeModal('present-modal');
-    
-    // 清空輸入欄位
-    document.getElementById('diaryBox').value = "";
-    document.getElementById('tagInput').value = "";
-    
-    if (typeof initCalendar === 'function') initCalendar(); // 刷新日曆
-};
-    // 點擊「憶往昔」時初始化日曆
-    const originalPlayAnim = playAnim;
-    playAnim = function(element, modalId, animClass) {
-        originalPlayAnim(element, modalId, animClass);
-        if (modalId === 'past-modal') {
-            setTimeout(initCalendar, 600);
-        }
-    };
-
 function selectMood(mood, el) {
         selectedMood = mood;
         document.querySelectorAll('.mood-item').forEach(i => i.classList.remove('selected'));
@@ -757,34 +719,80 @@ function createParticle(container, config) {
 }
 
     // 修改儲存邏輯，整合標籤與心情
-    function saveDiary() {
-        const text = document.getElementById('diaryBox').value;
-        const tag = document.getElementById('tagInput').value;
-        if(!text) return alert("請寫下您的心情");
-        
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
-        const diaryData = {
-            text: text,
-            tag: tag,
-            mood: selectedMood,
-            time: now.getTime()
-        };
+    /**
+ * 封存心情 (看今朝)
+ */
+function saveDiary() {
+    const textEl = document.getElementById('diaryBox');
+    const tagEl = document.getElementById('tagInput');
+    
+    const text = textEl.value;
+    const tag = tagEl.value;
+    
+    // 驗證內容
+    if (!text.trim()) return alert("請寫下您的心情");
+    
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    // 確保 mood 有預設值，避免變數未定義錯誤
+    const currentMood = (typeof selectedMood !== 'undefined') ? selectedMood : '平';
 
-        localStorage.setItem(`ink_diary_${dateStr}_${now.getTime()}`, JSON.stringify(diaryData));
+    // 構建結構化資料
+    const diaryData = {
+        text: text,
+        tag: tag.trim(),
+        mood: currentMood,
+        time: now.getTime()
+    };
+
+    const key = `ink_diary_${dateStr}_${now.getTime()}`;
+    
+    try {
+        // 儲存至本地瀏覽器
+        localStorage.setItem(key, JSON.stringify(diaryData));
         alert("心情已封存於時光長河。");
-        closeModal('present-modal');
         
-        // 清空並重整日曆
-        document.getElementById('diaryBox').value = "";
-        document.getElementById('tagInput').value = "";
-        if(typeof initCalendar === 'function') initCalendar();
+        // 1. 關閉彈窗並清空欄位
+        closeModal('present-modal');
+        textEl.value = "";
+        tagEl.value = "";
+        
+        // 2. 刷新日曆 (憶往昔) 與 水位顯示
+        if (typeof initCalendar === 'function') initCalendar();
+        if (typeof updateStorageLimit === 'function') updateStorageLimit(); 
+
+    } catch (e) {
+        // 處理容量爆滿的情況
+        if (e.name === 'QuotaExceededError') {
+            alert("時光長河已滿！請匯出備份後清空部分資料。");
+        } else {
+            console.error("存檔失敗：", e);
+        }
     }
+}
 
-    // 初始化季節
-    window.onload = initSeasonEffects;
-
+/**
+ * 動態擴充彈窗動畫邏輯
+ * 確保點擊「憶往昔」時會自動加載日曆
+ */
+if (!window.playAnimWrapped) {
+    const originalPlayAnim = playAnim; // 備份原始函數
+    
+    playAnim = function(element, modalId, animClass) {
+        // 執行原始動畫
+        originalPlayAnim(element, modalId, animClass);
+        
+        // 特殊處理：如果是打開「憶往昔」，則初始化日曆
+        if (modalId === 'past-modal') {
+            setTimeout(() => {
+                if (typeof initCalendar === 'function') initCalendar();
+            }, 600); // 配合 CSS 動畫時間
+        }
+    };
+    window.playAnimWrapped = true; 
+}
+    
         
         // 播放動畫後開啟彈窗
         function playAnim(element, modalId, animClass) {
@@ -841,6 +849,49 @@ function createParticle(container, config) {
             };
             reader.readAsText(file);
         }
+   
+    function updateStorageLimit() {
+    let total = 0;
+    try {
+        // 遍歷所有儲存項
+        for (let x in localStorage) {
+            if (localStorage.hasOwnProperty(x)) {
+                // Key 加上 Value 的長度，再乘以 2 位元組
+                total += (localStorage[x].length + x.length) * 2;
+            }
+        }
+        
+        const limit = 5 * 1024 * 1024; // 5MB 上限
+        const percentage = ((total / limit) * 100).toFixed(2);
+        
+        const display = document.getElementById('storage-usage');
+        if (display) {
+            display.innerText = `水位: ${percentage}%`;
+            
+            // 水位過高時變色提醒
+            if (percentage > 80) {
+                display.style.color = 'var(--seal-red)';
+                display.style.fontWeight = 'bold';
+            } else {
+                display.style.color = 'var(--ink-color)';
+                display.style.fontWeight = 'normal';
+            }
+        }
+    } catch (e) {
+        console.warn("無法計算儲存水位:", e);
+    }
+}
+
+// 頁面初次載入時自動執行
+document.addEventListener('DOMContentLoaded', updateStorageLimit);
+
+// 統一在頁面載入完成後執行
+window.addEventListener('DOMContentLoaded', () => {
+    initSeasonEffects();  // 啟動季節特效
+    updateStorageLimit(); // 顯示初始水位百分比
+});
+
+
     </script>
 </body>
 </html>
